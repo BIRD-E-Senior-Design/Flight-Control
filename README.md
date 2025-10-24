@@ -5,10 +5,10 @@ Drone flight controller firmware written for an RP2350a.
 1. Contents
 
 2. Software Block Diagram
-![Block Diagram](images/SoftwareBlock.png)
+![Block Diagram](assets/SoftwareBlock.png)
 
 2. State Machine on Core 1
-![State Machine](images/StateMachine.png)
+![State Machine](assets/StateMachine.png)
 
 3. Components List
 
