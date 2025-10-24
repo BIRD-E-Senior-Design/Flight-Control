@@ -35,17 +35,17 @@ void init_pwm_motor() {
 }
 
 void set_front_left(int level) {
-    pwm_set_chan_level(SLICE_FRONT,CHAN_LEFT,level*PERIOD/100);
+    pwm_set_chan_level(SLICE_FRONT,CHAN_LEFT,level);
 }
 
 void set_front_right(int level) {
-    pwm_set_chan_level(SLICE_FRONT,CHAN_RIGHT,level*PERIOD/100);
+    pwm_set_chan_level(SLICE_FRONT,CHAN_RIGHT,level);
 }
 
 void set_back_left(int level) {
-    pwm_set_chan_level(SLICE_BACK,CHAN_LEFT,level*PERIOD/100);
+    pwm_set_chan_level(SLICE_BACK,CHAN_LEFT,level);
 }
 
 void set_back_right(int level) {
-    pwm_set_chan_level(SLICE_BACK,CHAN_RIGHT,level*PERIOD/100);
+    pwm_set_chan_level(SLICE_BACK,CHAN_RIGHT,level);
 }

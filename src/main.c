@@ -1,5 +1,5 @@
 #include "pico/stdlib.h"
-#include "setup.h"
+#include "pwm.h"
 
 int main() {
     init_pwm_motor();
