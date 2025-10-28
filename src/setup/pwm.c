@@ -1,21 +1,21 @@
 #include "pico/stdlib.h"
 #include "hardware/pwm.h"
-#include "setup.h"
+#include "pwm.h"
 
 //slices are divided by front & back and channels by left & right
-#define PWM_FRONT_LEFT 8
-#define PWM_FRONT_RIGHT 9
-#define PWM_BACK_LEFT 10
-#define PWM_BACK_RIGHT 11
+#define PWM_FRONT_LEFT 30
+#define PWM_FRONT_RIGHT 31
+#define PWM_BACK_LEFT 32
+#define PWM_BACK_RIGHT 33
 
-#define SLICE_FRONT 4
-#define SLICE_BACK 5
+#define SLICE_FRONT 7
+#define SLICE_BACK 8
 #define CHAN_LEFT 0
 #define CHAN_RIGHT 1
 
 #define PERIOD 1000
 
-void init_pwm_motor() {
+void init_pwm_motor(void) {
     //pin mux functions
     gpio_set_function(PWM_FRONT_LEFT, GPIO_FUNC_PWM);
     gpio_set_function(PWM_FRONT_RIGHT, GPIO_FUNC_PWM);
