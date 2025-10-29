@@ -24,3 +24,4 @@ Drone flight controller firmware written for an RP2350a.
 - [RP2350](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf)
 - [PICO SDK](https://datasheets.raspberrypi.com/pico/raspberry-pi-pico-c-sdk.pdf)
 - [MPU 9250 IMU](https://cdn.sparkfun.com/assets/learn_tutorials/5/5/0/MPU9250REV1.0.pdf)
+- [MPU 9250 Internal Register Map](https://invensense.tdk.com/wp-content/uploads/2015/02/RM-MPU-9250A-00-v1.6.pdf)
