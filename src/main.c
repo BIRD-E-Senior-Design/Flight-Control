@@ -28,26 +28,26 @@ void imu_demo(void) {
 
 int main() {
     stdio_init_all();
-    init_i2c_imu();
+    init_i2c0();
     init_pwm_motor();
     mutex_init(&mx);
 
     //example 4: read all 3 gyro dimensions and print to the screen
-    for (;;) {
-        sleep_ms(50);
-        read_imu_gyro();
-        printf("X: %d Y: %d Z: %d\n", gyro_data.x_acc/131, gyro_data.y_acc/131, gyro_data.z_acc/131);
-    }
+    // for (;;) {
+    //     sleep_ms(50);
+    //     read_imu_gyroscope();
+    //     printf("X: %d Y: %d Z: %d\n", gyro_data.x/131, gyro_data.y/131, gyro_data.z/131);
+    // }
 
     //example 3: multicore gyro x read and pwm brightness update
-    // multicore_launch_core1(imu_demo);
-    // for (;;) {
-    //     sleep_ms(10);
-    //     mutex_enter_blocking(&mx);
-    //     imu = read_imu() / 131 * 3;
-    //     if (imu < 0) {imu *= -1;}
-    //     mutex_exit(&mx);
-    // }
+    multicore_launch_core1(imu_demo);
+    for (;;) {
+        sleep_ms(10);
+        mutex_enter_blocking(&mx);
+        imu = read_imu() / 131 * 3;
+        if (imu < 0) {imu *= -1;}
+        mutex_exit(&mx);
+    }
     //example 2: prints gyro x data to screen
     // for (;;) {
     //     sleep_ms(100);
