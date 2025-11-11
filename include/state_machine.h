@@ -1,14 +1,9 @@
 #ifndef SM_H
 #define SM_H
 
-#include "pico/mutex.h"
-
-extern int test;
-extern int test2;
-extern int test3;
-extern int test4;
-extern mutex_t mx; 
-
+/*!
+* \brief State machine that dispatches event-specific handlers to drive outputs, launchpoint and default function for core1
+*/
 void state_machine(void);
 
 #endif
