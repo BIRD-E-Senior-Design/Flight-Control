@@ -17,12 +17,6 @@ static uint8_t internal_reg_addr;
 static imu_measurement data_point;
 imu_fifo_t imu_buffer;
 
-void init_i2c0() {
-    i2c_init(i2c0, 400000); //400 KHz is required for the MPU 9250
-    gpio_set_function(I2C0_SDA, GPIO_FUNC_I2C);
-    gpio_set_function(I2C0_SCL, GPIO_FUNC_I2C);
-}
-
 imu_measurement imu_fifo_pop(imu_fifo_t* fifo) {
     imu_measurement popped_val;
     mutex_enter_blocking(&fifo->mx); 
@@ -117,12 +111,34 @@ void read_imu() {
 }
 
 void init_imu_internal() {
-    //i2c peripheral setup
+    uint8_t config_data[2];
+    //I2C Peripheral
     i2c_init(i2c0, 400000); //400 KHz is required for the MPU 9250
     gpio_set_function(I2C0_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C0_SCL, GPIO_FUNC_I2C);
 
-    //timer and alarm setup
+    //IMU Internal Config
+    config_data[0] = 0x1A; //config reg
+    config_data[1] = 0x06; //DLPF_CFG = 6 for gyroscope
+    i2c_write_blocking(i2c0, IMU_I2C_ADDR, config_data, 1, true);
+
+    config_data[0] = 0x1B; //gyro config reg
+    config_data[1] = 0x18; //set full scale range to 2000 dps and fchoice_b to 00
+    i2c_write_blocking(i2c0, IMU_I2C_ADDR, config_data, 1, true);
+
+    config_data[0] = 0x1C; //accelerometer config reg 1
+    config_data[1] = 0x18; //set full scale range to +-16g
+    i2c_write_blocking(i2c0, IMU_I2C_ADDR, config_data, 1, true);
+
+    config_data[0] = 0x1D; //accel config reg 2
+    config_data[1] = 0x0E;  //fchoice_b = 1 and dlpf_cfg = 6 for accelerometer
+    i2c_write_blocking(i2c0, IMU_I2C_ADDR, config_data, 1, true);
+
+    config_data[0] = 0x0A; //mag config
+    config_data[1] = 0x02;  //continuous mode
+    i2c_write_blocking(i2c0, IMU_I2C_ADDR, config_data, 1, true);
+
+    //Timer & Alarm
     timer0_hw->inte = 1 << 0;
     irq_set_exclusive_handler(TIMER0_IRQ_0, read_imu);
     irq_set_enabled(TIMER0_IRQ_0, true);
