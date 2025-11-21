@@ -35,10 +35,6 @@ void init_imu_internal() {
     gpio_set_function(I2C0_SCL, GPIO_FUNC_I2C);
 
     //IMU Internal Config
-    // config_data[0] = 0x3E; //pwr_mode register
-    // config_data[1] = 0x00; //normal mode
-    // i2c_write_blocking(i2c0, IMU_I2C_ADDR, config_data, 2, false);
-
     config_data[0] = 0x3D; //opr_mode register
     config_data[1] = 0x0C; //NDOF fusion mode
     i2c_write_blocking(i2c0, IMU_I2C_ADDR, config_data, 2, false);
