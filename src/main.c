@@ -19,9 +19,9 @@ int main() {
     for (;;) {
         sleep_ms(10);
         temp = read_imu();
-        printf(">EulerX:%d\n", temp.x);
-        printf(">EulerY:%d\n", temp.y);
-        printf(">EulerZ:%d\n", temp.z);
+        printf(">EulerX:%.4f\n", temp.x/16.0);
+        printf(">EulerY:%.4f\n", temp.y/16.0);
+        printf(">EulerZ:%.4f\n", temp.z/16.0);
     }
     
     return 0;
