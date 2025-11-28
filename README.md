@@ -4,18 +4,24 @@ Drone flight controller firmware written for an RP2350a.
 ## Contents
 
 ## Relevant Diagrams
-### Software Block Diagram
-![Block Diagram](assets/SoftwareBlock.png)
-
-### State Machine on Core 1
-![State Machine](assets/StateMachine.png)
+<p align="center">
+  <img src="assets/SoftwareBlock.png">
+  <br>
+  <i>Figure 1: Software Block Diagram</i>
+</p>
+<br>
+<p align="center">
+  <img src="assets/StateMachine.png">
+  <br>
+  <i>Figure 2: State Machine on Core 1</i>
+</p>
 
 ## Components List
 
-- MCU: RP2350a
-- Wifi & Video: Raspberry Pi Zero 2W
-- IMU: MPU 9250 (used in testing for now) --> BNO055 9DoF
-- Altimeter: MPU L35115A2
+- MCU: `RP2350a`
+- Wifi & Video: `Raspberry Pi Zero 2W`
+- 9DoF IMU: `MPU 9250` (used in testing for now) --> `BNO055` 
+- Altimeter: `MPU L35115A2`
 - Laser ToF Sensor:
 - Remote Control: SPI bridge to Zero 2W
 - Drift Cam:
