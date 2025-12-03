@@ -1,11 +1,9 @@
 #include "pico/stdlib.h"
 #include "pwm.h"
+#include "altimeter.h"
 
 int main() {
-    init_pwm_motor();
-    for (;;) {
-        
-    }
-
+    stdio_init_all(); //enable UART driver for terminal display 
+    init_altimeter(); 
     return 0;
 }
