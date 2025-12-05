@@ -1,43 +1,53 @@
 #include <stdio.h>
-#include <pico/stdlib.h>
+#include "pico/stdlib.h"
+#include "hardware/i2c.h"
 #include "tof/tof.h"
-#include "tof/vl53l1_platform.h"
-#include "tof/VL53L1X_api.h"
+#include "tof/platform.h"
+#include "tof/vl53l5cx_api.h"
 
-static uint16_t dev = 0;
+VL53L5CX_Configuration tof_config;
+VL53L5CX_ResultsData data;
 
 void init_tof() {
-    uint8_t bootstate = 1;
+    //I2C Peripheral
+    i2c_init(i2c0, 400000); //1 MHz
+    gpio_set_function(28, GPIO_FUNC_I2C);
+    gpio_set_function(29, GPIO_FUNC_I2C);
 
-    //stall until sensor successfully booted
-    while (bootstate!=0) {
-        VL53L1X_BootState(dev,&bootstate);
-        sleep_ms(50);
-    }
-    //provided initialization sequence
-    VL53L1X_SensorInit(dev);
+    //flash firmware and init
+    vl53l5cx_init(&tof_config);
+
+    //set ranging frequency at 50hz
+    vl53l5cx_set_ranging_frequency_hz(&tof_config,50);
+
     //enable ranging mode
-    VL53L1X_StartRanging(dev);
+    vl53l5cx_start_ranging(&tof_config);
+
     //wait a bit for the first sensor read to occur just to be safe
     sleep_ms(150);
 }
 
-uint16_t read_tof() {
-    uint8_t dataready;
-    uint16_t distance;
+int16_t read_tof() {
+    uint8_t dataready = 1;
+    int16_t distance = 0x7fff; //max integer
 
     //wait for data ready, shouldn't spin if timer interrupts wait long enough
     while (dataready!=0) {
-        VL53L1X_CheckForDataReady(dev, &dataready);
+        vl53l5cx_check_data_ready(&tof_config, &dataready);
     }
-    //get distance measurement
-    VL53L1X_GetDistance(dev,&distance);
-    //clear interrupt (we aren't using it but it still fires and will throw off dataready if not cleared)
-    VL53L1X_ClearInterrupt(dev);
+    
+    //get distance measurement, take minimum for most conservative crash avoidance
+    vl53l5cx_get_ranging_data(&tof_config,&data);
+    for (int i=0; i<16; i++) {
+        if (data.distance_mm[i] < distance) {
+            distance = data.distance_mm[i];
+        }
+    }
+
     return distance;
 }
 
 void shutdown_tof() {
     //stop ranging mode
-    VL53L1X_StopRanging(dev);
+    vl53l5cx_stop_ranging(&tof_config);
 }

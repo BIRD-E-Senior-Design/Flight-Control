@@ -6,7 +6,7 @@
 
 void init_tof();
 
-uint16_t read_tof();
+int16_t read_tof();
 
 void shutdown_tof();
 
