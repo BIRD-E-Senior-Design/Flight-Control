@@ -6,13 +6,13 @@
 #include "hardware/i2c.h"
 
 // ports that the MPL3115A is connected to on the MCU 
-#define ALT_INT1 25
-#define ALT_INT2 28
-#define I2C_SDA 26
+#define ALT_INT1 28
+#define ALT_INT2 25
+#define I2C_SDA 22
 #define I2C_SCL 27
 #define I2C_FAST_MODE 400000
 
-#define ALT_SLAVE_ADDR 0xC0
+#define ALT_ADDR 0x60 // 7-bit slave address 
 
 /*! \brief Initialize GPIO pins and interrupts for the MPL3115A */
 void init_altimeter(); 

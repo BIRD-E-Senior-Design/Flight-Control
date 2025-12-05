@@ -1,6 +1,5 @@
 #include "pico/stdlib.h"
 #include "hardware/pwm.h"
-#include "setup.h"
 
 //slices are divided by front & back and channels by left & right
 #define PWM_FRONT_LEFT 8
