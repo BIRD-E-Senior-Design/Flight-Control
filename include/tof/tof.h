@@ -1,13 +1,29 @@
- #include <stdio.h>
- 
 #ifndef TOF_H
 #define TOF_H
 
+#include <stdio.h>
+
+typedef struct {
+    int16_t distance;
+} tof_measurement;
+
+typedef struct {
+    volatile tof_measurement buffer[64];
+    volatile int count; 
+    volatile int head; 
+    volatile int tail; 
+    mutex_t mx; 
+} tof_fifo_t; 
+
+//shared memory tof buffer
+extern tof_fifo_t tof_buffer;
 
 void init_tof();
 
-int16_t read_tof();
+void read_tof();
 
 void shutdown_tof();
+
+int tof_fifo_pop(tof_fifo_t* fifo, tof_measurement* dest);
 
 #endif

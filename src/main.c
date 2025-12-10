@@ -1,26 +1,34 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
-#include "pwm.h"
-#include "imu.h"
-#include "state_machine.h"
+#include "hardware/timer.h"
 #include "tof/tof.h"
+#include "imu.h"
+#include "pwm.h"
+#include "state_machine.h"
+
+void start_polling() {
+    timer0_hw->alarm[0] = timer0_hw->timerawl + (uint32_t) 20000; //IMU timer
+    timer0_hw->alarm[1] = timer0_hw->timerawl + (uint32_t) 30000; //ToF Timer
+}
 
 int main() {
-    int16_t distance;
-
     //initialize uart for the debugger/printf statements
     stdio_init_all();
-    //initialize i2c bus and tof
+    //initialize imu, tof, and motor pwm
     init_tof();
+    init_imu();
+    init_pwm_motor();
+    //launch second core
+    multicore_launch_core1(state_machine);
+    //start sensor polling
+    start_polling();
 
     //infinite loop to print tof values
     for (;;) {
-        sleep_ms(20);
-        distance = read_tof();
-        printf("\n");
-        printf(">Min Distance:%d\n", distance);
+        tight_loop_contents();
     }
     
     return 0;
 }
+

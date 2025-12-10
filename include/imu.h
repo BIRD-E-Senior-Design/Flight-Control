@@ -3,9 +3,6 @@
 
 #include "pico/mutex.h"
 
-//buffer macros
-#define BUFSIZE 64 
-
 //IMU measurement type
 typedef struct {
     int16_t x;
@@ -15,7 +12,7 @@ typedef struct {
 
 //IMU buffer type
 typedef struct {
-    volatile imu_measurement buffer[BUFSIZE];
+    volatile imu_measurement buffer[64];
     volatile int count; 
     volatile int head; 
     volatile int tail; 
@@ -25,19 +22,10 @@ typedef struct {
 //shared memory imu buffer
 extern imu_fifo_t imu_buffer;
 
-/*!
-* \brief initialize timer0 alarm0 to call read_imu every 20ms, i2c0 at 400KHz, and the imu_buffer mutex
-*/
-void init_imu_internal();
+void init_imu();
 
-/*!
-* \brief Read euler or quaternion data and push onto the imu_buffer
-*/
-imu_measurement read_imu(); 
+void read_imu(); 
 
-/*!
-* \brief Pop the oldest value (from the head)
-*/
-imu_measurement imu_fifo_pop(imu_fifo_t* fifo);
+int imu_fifo_pop(imu_fifo_t* fifo, imu_measurement* dest);
 
 #endif
