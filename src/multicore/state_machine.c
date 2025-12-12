@@ -6,18 +6,19 @@
 #include "imu.h"
 #include "tof/tof.h"
 
-static imu_measurement temp;
-static tof_measurement temp2;
-
 void state_machine(void) {
+    imu_measurement orientation;
+    tof_measurement distance;
+    
     for (;;) {
-        if (imu_fifo_pop(&imu_buffer, &temp)) {
-            printf(">EulerX:%d\n", temp.x);
-            printf(">EulerY:%d\n", temp.y);
-            printf(">EulerZ:%d\n", temp.z);
+        if (imu_fifo_pop(&imu_buffer, &orientation)) {
+            printf(">EulerX:%f\n", orientation.x/16.0);
+            printf(">EulerY:%f\n", orientation.y/16.0);
+            printf(">EulerZ:%f\n", orientation.z/16.0);
         }
-        if (tof_fifo_pop(&tof_buffer, &temp2)) {
-            printf(">Min Distance:%d\n", temp2.distance);
+        
+        if (tof_fifo_pop(&tof_buffer, &distance)) {
+            printf(">Min Distance:%d\n", distance.distance);
         }
     }
 }

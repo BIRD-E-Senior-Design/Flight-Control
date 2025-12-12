@@ -1,7 +1,7 @@
 #ifndef TOF_H
 #define TOF_H
 
-#include <stdio.h>
+#include "pico/mutex.h"
 
 typedef struct {
     int16_t distance;

@@ -3,13 +3,13 @@
 #include "pwm.h"
 
 //slices are divided by front & back and channels by left & right
-#define PWM_FRONT_LEFT 30
-#define PWM_FRONT_RIGHT 31
-#define PWM_BACK_LEFT 32
-#define PWM_BACK_RIGHT 33
+#define PWM_FRONT_LEFT 32
+#define PWM_FRONT_RIGHT 33
+#define PWM_BACK_LEFT 34
+#define PWM_BACK_RIGHT 35
 
-#define SLICE_FRONT 7
-#define SLICE_BACK 8
+#define SLICE_FRONT 8
+#define SLICE_BACK 9
 #define CHAN_LEFT 0
 #define CHAN_RIGHT 1
 

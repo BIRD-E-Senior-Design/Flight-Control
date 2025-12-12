@@ -8,8 +8,9 @@
 #include "state_machine.h"
 
 void start_polling() {
-    timer0_hw->alarm[0] = timer0_hw->timerawl + (uint32_t) 20000; //IMU timer
-    timer0_hw->alarm[1] = timer0_hw->timerawl + (uint32_t) 30000; //ToF Timer
+    uint32_t time = timer0_hw->timerawl;
+    timer0_hw->alarm[0] = time + (uint32_t) 20000; //ToF timer
+    timer0_hw->alarm[1] = time + (uint32_t) 25000; //IMU timer
 }
 
 int main() {
@@ -18,7 +19,7 @@ int main() {
     //initialize imu, tof, and motor pwm
     init_tof();
     init_imu();
-    init_pwm_motor();
+    //init_pwm_motor();
     //launch second core
     multicore_launch_core1(state_machine);
     //start sensor polling
