@@ -1,13 +1,8 @@
 #include "rpz.h"
 #include "pico/stdlib.h"
-#include "hardware/spi.h"
+#include "hardware/uart.h"
 #include "pico/mutex.h"
 #include <stdio.h>
-
-#define RPZ_CSN 37
-#define RPZ_SCK 38
-#define RPZ_RX 36
-#define RPZ_TX 39
 
 cmd_fifo_t cmd_buffer;
 
@@ -43,27 +38,24 @@ int cmd_fifo_pop(cmd_fifo_t* fifo, uint8_t* dest) {
 }
 
 void get_command() {
-    //fifo_push(&cmd_buffer,spi0_hw->dr | 0xff);
-    printf("Command Received: %d\n",spi0_hw->dr & 0xff);
+    uart1_hw->icr = UART_UARTICR_RXIC_BITS | UART_UARTICR_RTIC_BITS;
+    uint8_t dest = uart1_hw->dr & 0xff;;
+    fifo_push(&cmd_buffer,dest);
 }
 
-//1MHZ, 8bit, slave mode
 void init_rpz() {
     //pins
-    gpio_set_function(RPZ_CSN, GPIO_FUNC_SPI);
-    gpio_set_function(RPZ_SCK, GPIO_FUNC_SPI);
-    gpio_set_function(RPZ_RX, GPIO_FUNC_SPI);
-    gpio_set_function(RPZ_TX, GPIO_FUNC_SPI);
+    gpio_set_function(36, GPIO_FUNC_UART);
+    gpio_set_function(37, GPIO_FUNC_UART);
 
-    //internal spi peripheral
-    spi_init(spi0, 1000000);
-    spi_set_format(spi0,8,0,0,SPI_MSB_FIRST);
-    spi0_hw->cr1 = SPI_SSPCR1_MS_BITS | SPI_SSPCR1_SSE_BITS;
+    //internal uart peripheral
+    uart_init(uart1, 115200);
+    uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
 
     //interrupt
-    spi0_hw->imsc = SPI_SSPIMSC_RXIM_BITS;
-    irq_set_exclusive_handler(SPI0_IRQ, get_command);
-    irq_set_enabled(SPI0_IRQ, true);
+    uart_set_irqs_enabled(uart1, true, false);
+    irq_set_exclusive_handler(UART1_IRQ, get_command);
+    irq_set_enabled(UART1_IRQ, true);
 
     //buffer
     cmd_buffer.count = 0;

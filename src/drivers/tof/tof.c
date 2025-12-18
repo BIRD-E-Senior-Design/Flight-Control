@@ -50,6 +50,13 @@ void init_tof() {
     gpio_set_function(I2C0_SCL,GPIO_FUNC_I2C);
     gpio_set_function(I2C0_SDA,GPIO_FUNC_I2C);
 
+    //ToF Reset Sequence (IOVDD, AVDD, LPn low then high)
+    gpio_init(25);
+    gpio_set_dir(25, true);
+    gpio_put(25, false);
+    sleep_ms(10);
+    gpio_put(25, true);
+
     //flash firmware and init
     vl53l5cx_init(&tof_config);
 
