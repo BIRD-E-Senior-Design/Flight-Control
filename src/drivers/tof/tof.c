@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
-#include "pico/mutex.h"
+#include "pico/critical_section.h"
 #include "hardware/i2c.h"
 #include "tof/tof.h"
 #include "tof/platform.h"
@@ -13,26 +13,19 @@ VL53L5CX_Configuration tof_config;
 VL53L5CX_ResultsData data;
 tof_fifo_t tof_buffer;
 
-static void fifo_push(tof_fifo_t* fifo, tof_measurement val) {
-    mutex_enter_blocking(&fifo->mx);   
-    
-    if(fifo->count + 1 > 64) {
-        mutex_exit(&fifo->mx); 
-        return;
+static void fifo_push(tof_fifo_t* fifo, tof_measurement val) { 
+    if(fifo->count + 1 <= 64) {
+        fifo->buffer[fifo->tail] = val; 
+        fifo->tail = (fifo->tail + 1) % 64;
+        fifo->count++; 
     }
-
-    fifo->buffer[fifo->tail] = val; 
-    fifo->tail = (fifo->tail + 1) % 64;
-    fifo->count++; 
-    
-    mutex_exit(&fifo->mx); 
 }
 
 int tof_fifo_pop(tof_fifo_t* fifo, tof_measurement* dest) {
-    mutex_enter_blocking(&fifo->mx);
+    critical_section_enter_blocking(&fifo->lock);  
 
     if(!fifo->count) {
-        mutex_exit(&fifo->mx); 
+        critical_section_exit(&fifo->lock); 
         return 0;
     }
 
@@ -40,13 +33,13 @@ int tof_fifo_pop(tof_fifo_t* fifo, tof_measurement* dest) {
     *dest = fifo->buffer[fifo->head];
     fifo->head = (fifo->head + 1) % 64;
 
-    mutex_exit(&fifo->mx); 
+    critical_section_exit(&fifo->lock);
     return 1; 
 }
 
 void init_tof() {
     //I2C Peripheral
-    i2c_init(i2c0, 1000000); //1 MHz
+    i2c_init(i2c0, 400000); //400KHz I2C fast mode
     gpio_set_function(I2C0_SCL,GPIO_FUNC_I2C);
     gpio_set_function(I2C0_SDA,GPIO_FUNC_I2C);
 
@@ -61,7 +54,7 @@ void init_tof() {
     vl53l5cx_init(&tof_config);
 
     //set ranging frequency at 50hz
-    vl53l5cx_set_ranging_frequency_hz(&tof_config,50);
+    vl53l5cx_set_ranging_frequency_hz(&tof_config,60);
 
     //enable ranging mode
     vl53l5cx_start_ranging(&tof_config);
@@ -70,7 +63,7 @@ void init_tof() {
     tof_buffer.count = 0;
     tof_buffer.head = 0;
     tof_buffer.tail = 0;
-    mutex_init(&tof_buffer.mx);
+    critical_section_init(&tof_buffer.lock);
 
     //Timer & Alarm
     timer0_hw->inte |= 1 << 0;
@@ -83,8 +76,11 @@ void read_tof() {
     int16_t distance = 0x7fff; //max integer
     tof_measurement meas;
     uint32_t time = timer0_hw->timerawl;
-    hw_clear_bits(&timer0_hw->intr, 1); //ack interrupt
 
+    critical_section_enter_blocking(&tof_buffer.lock);
+
+    hw_clear_bits(&timer0_hw->intr, 1); //ack interrupt
+    
     //wait for data ready, shouldn't spin if timer interrupts wait long enough
     while (dataready!=0) {
         vl53l5cx_check_data_ready(&tof_config, &dataready);
@@ -101,6 +97,8 @@ void read_tof() {
     fifo_push(&tof_buffer,meas);
 
     timer0_hw->alarm[0] = time + (uint32_t) 20000; //reset alarm
+
+    critical_section_exit(&tof_buffer.lock);
 }
 
 void shutdown_tof() {

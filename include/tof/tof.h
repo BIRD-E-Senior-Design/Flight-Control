@@ -1,7 +1,7 @@
 #ifndef TOF_H
 #define TOF_H
 
-#include "pico/mutex.h"
+#include "pico/critical_section.h"
 
 typedef struct {
     int16_t distance;
@@ -12,7 +12,7 @@ typedef struct {
     volatile int count; 
     volatile int head; 
     volatile int tail; 
-    mutex_t mx; 
+    critical_section_t lock; 
 } tof_fifo_t; 
 
 //shared memory tof buffer

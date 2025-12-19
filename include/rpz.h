@@ -1,7 +1,7 @@
 #ifndef RPZ_H
 #define RPZ_H
 
-#include "pico/mutex.h"
+#include "pico/critical_section.h"
 
 //command buffer type
 typedef struct {
@@ -9,7 +9,7 @@ typedef struct {
     volatile int count; 
     volatile int head; 
     volatile int tail; 
-    mutex_t mx; 
+    critical_section_t lock; 
 } cmd_fifo_t; 
 
 extern cmd_fifo_t cmd_buffer;

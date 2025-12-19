@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
-#include "pico/mutex.h"
+#include "pico/critical_section.h"
 #include "hardware/i2c.h"
 #include "hardware/timer.h"
 #include "imu.h"
@@ -13,25 +13,18 @@
 imu_fifo_t imu_buffer;
 
 static void fifo_push(imu_fifo_t* fifo, imu_measurement val) {
-    mutex_enter_blocking(&fifo->mx);   
-    
-    if(fifo->count + 1 > 64) {
-        mutex_exit(&fifo->mx); 
-        return;
+    if(fifo->count + 1 <= 64) {
+        fifo->buffer[fifo->tail] = val; 
+        fifo->tail = (fifo->tail + 1) % 64;
+        fifo->count++; 
     }
-
-    fifo->buffer[fifo->tail] = val; 
-    fifo->tail = (fifo->tail + 1) % 64;
-    fifo->count++; 
-    
-    mutex_exit(&fifo->mx); 
 }
 
 int imu_fifo_pop(imu_fifo_t* fifo, imu_measurement* dest) {
-    mutex_enter_blocking(&fifo->mx); 
+    critical_section_enter_blocking(&fifo->lock); 
     
     if(!fifo->count) {
-        mutex_exit(&fifo->mx); 
+        critical_section_exit(&fifo->lock); 
         return 0;
     }
 
@@ -39,7 +32,7 @@ int imu_fifo_pop(imu_fifo_t* fifo, imu_measurement* dest) {
     fifo->count--;
     fifo->head = (fifo->head + 1) % 64;
 
-    mutex_exit(&fifo->mx); 
+    critical_section_exit(&fifo->lock); 
     return 1; 
 }
 
@@ -48,6 +41,9 @@ void read_imu() {
     uint8_t internal_reg_addr;
     imu_measurement data_point;
     uint32_t time = timer0_hw->timerawl;
+
+    critical_section_enter_blocking(&imu_buffer.lock);
+
     hw_clear_bits(&timer0_hw->intr, 2); //ack interrupt
 
     internal_reg_addr = 0x1A; //euler x lsb register
@@ -60,13 +56,22 @@ void read_imu() {
     fifo_push(&imu_buffer,data_point);
 
     timer0_hw->alarm[1] = time + (uint32_t) 10000; //reset alarm
+
+    critical_section_exit(&imu_buffer.lock); 
 }
 
 void init_imu() {
     uint8_t config_data[2];
 
+    //IMU reset pin
+    gpio_init(38);
+    gpio_set_dir(38, true);
+    gpio_put(38, false);
+    sleep_ms(10);
+    gpio_put(38, true);
+
     //I2C Peripheral
-    i2c_init(i2c1, 400000); //100 KHz: i2c standard mode
+    i2c_init(i2c1, 400000); //400 KHz: i2c fast mode
     gpio_set_function(I2C1_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C1_SCL, GPIO_FUNC_I2C);
 
@@ -74,14 +79,14 @@ void init_imu() {
     config_data[1] = 0x0C; //NDOF fusion mode
     i2c_write_blocking(i2c1, IMU_I2C_ADDR, config_data, 2, false);
 
-    //Timer & Alarm
-    timer0_hw->inte |= 1 << 1;
-    irq_set_exclusive_handler(TIMER0_IRQ_1, read_imu);
-    irq_set_enabled(TIMER0_IRQ_1, true);
-
     //Buffer initialization
     imu_buffer.count = 0;
     imu_buffer.head = 0;
     imu_buffer.tail = 0;
-    mutex_init(&imu_buffer.mx);
+    critical_section_init(&imu_buffer.lock);
+
+    //Timer & Alarm
+    timer0_hw->inte |= 1 << 1;
+    irq_set_exclusive_handler(TIMER0_IRQ_1, read_imu);
+    irq_set_enabled(TIMER0_IRQ_1, true);
 }
