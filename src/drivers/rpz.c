@@ -1,31 +1,25 @@
+#include <stdio.h>
 #include "rpz.h"
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
-#include "pico/mutex.h"
-#include <stdio.h>
+#include "pico/critical_section.h"
+
 
 cmd_fifo_t cmd_buffer;
 
 static void fifo_push(cmd_fifo_t* fifo, uint8_t val) {
-    mutex_enter_blocking(&fifo->mx);   
-    
-    if(fifo->count + 1 > 64) {
-        mutex_exit(&fifo->mx); 
-        return;
+    if(fifo->count + 1 <= 64) {
+        fifo->buffer[fifo->tail] = val; 
+        fifo->tail = (fifo->tail + 1) % 64;
+        fifo->count++; 
     }
-
-    fifo->buffer[fifo->tail] = val; 
-    fifo->tail = (fifo->tail + 1) % 64;
-    fifo->count++; 
-    
-    mutex_exit(&fifo->mx); 
 }
 
 int cmd_fifo_pop(cmd_fifo_t* fifo, uint8_t* dest) {
-    mutex_enter_blocking(&fifo->mx); 
+    critical_section_enter_blocking(&fifo->lock); 
     
     if(!fifo->count) {
-        mutex_exit(&fifo->mx); 
+        critical_section_exit(&fifo->lock); 
         return 0;
     }
 
@@ -33,14 +27,28 @@ int cmd_fifo_pop(cmd_fifo_t* fifo, uint8_t* dest) {
     fifo->count--;
     fifo->head = (fifo->head + 1) % 64;
 
-    mutex_exit(&fifo->mx); 
+    critical_section_exit(&fifo->lock); 
     return 1; 
 }
 
+void send_ack() {
+    uart1_hw->dr = 0xff;
+}
+
+void send_nack() {
+    uart1_hw->dr = 0;
+}
+
+//push every command currently in the receive fifo into the cmd buffer
 void get_command() {
+    critical_section_enter_blocking(&cmd_buffer.lock); 
+
     uart1_hw->icr = UART_UARTICR_RXIC_BITS | UART_UARTICR_RTIC_BITS;
-    uint8_t dest = uart1_hw->dr & 0xff;;
-    fifo_push(&cmd_buffer,dest);
+    while (uart_is_readable(uart1)) {
+        fifo_push(&cmd_buffer,uart1_hw->dr && 0xff);
+    }
+
+    critical_section_exit(&cmd_buffer.lock); 
 }
 
 void init_rpz() {
@@ -52,15 +60,15 @@ void init_rpz() {
     uart_init(uart1, 115200);
     uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
 
-    //interrupt
-    uart_set_irqs_enabled(uart1, true, false);
-    irq_set_exclusive_handler(UART1_IRQ, get_command);
-    irq_set_enabled(UART1_IRQ, true);
-
     //buffer
     cmd_buffer.count = 0;
     cmd_buffer.head = 0;
     cmd_buffer.tail = 0;
-    mutex_init(&cmd_buffer.mx);
+    critical_section_init(&cmd_buffer.lock);
+
+    //interrupt
+    uart_set_irqs_enabled(uart1, true, false);
+    irq_set_exclusive_handler(UART1_IRQ, get_command);
+    irq_set_enabled(UART1_IRQ, true);
 }
 

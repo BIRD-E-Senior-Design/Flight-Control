@@ -1,7 +1,7 @@
 #ifndef IMU_H
 #define IMU_H
 
-#include "pico/mutex.h"
+#include "pico/critical_section.h"
 
 //IMU measurement type
 typedef struct {
@@ -16,7 +16,7 @@ typedef struct {
     volatile int count; 
     volatile int head; 
     volatile int tail; 
-    mutex_t mx; 
+    critical_section_t lock; 
 } imu_fifo_t; 
 
 //shared memory imu buffer
