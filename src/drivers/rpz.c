@@ -31,12 +31,22 @@ int cmd_fifo_pop(cmd_fifo_t* fifo, uint8_t* dest) {
     return 1; 
 }
 
+void send_ack() {
+    uart1_hw->dr = 0xff;
+}
+
+void send_nack() {
+    uart1_hw->dr = 0;
+}
+
+//push every command currently in the receive fifo into the cmd buffer
 void get_command() {
     critical_section_enter_blocking(&cmd_buffer.lock); 
 
     uart1_hw->icr = UART_UARTICR_RXIC_BITS | UART_UARTICR_RTIC_BITS;
-    uint8_t dest = uart1_hw->dr & 0xff;;
-    fifo_push(&cmd_buffer,dest);
+    while (uart_is_readable(uart1)) {
+        fifo_push(&cmd_buffer,uart1_hw->dr && 0xff);
+    }
 
     critical_section_exit(&cmd_buffer.lock); 
 }

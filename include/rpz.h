@@ -14,6 +14,10 @@ typedef struct {
 
 extern cmd_fifo_t cmd_buffer;
 
+void send_ack();
+
+void send_nack();
+
 void init_rpz();
 
 int cmd_fifo_pop(cmd_fifo_t* fifo, uint8_t* dest);

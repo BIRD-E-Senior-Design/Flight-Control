@@ -12,6 +12,7 @@ void start_polling() {
     timer0_hw->alarm[0] = timer0_hw->timerawl + (uint32_t) 20000; //set running
     timer0_hw->alarm[1] = timer0_hw->timerawl + (uint32_t) 10000;
 }
+
 int main() {
     //initialize uart for the debugger/printf statements
     stdio_init_all();

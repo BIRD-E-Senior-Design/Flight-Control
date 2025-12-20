@@ -64,11 +64,11 @@ void init_imu() {
     uint8_t config_data[2];
 
     //IMU reset pin
-    gpio_init(38);
-    gpio_set_dir(38, true);
-    gpio_put(38, false);
-    sleep_ms(10);
-    gpio_put(38, true);
+    // gpio_init(38);
+    // gpio_set_dir(38, true);
+    // gpio_put(38, false);
+    // sleep_ms(10);
+    // gpio_put(38, true);
 
     //I2C Peripheral
     i2c_init(i2c1, 400000); //400 KHz: i2c fast mode

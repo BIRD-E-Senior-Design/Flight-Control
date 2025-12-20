@@ -20,7 +20,7 @@ void state_machine(void) {
     for (;;) {
         #ifdef RPZ_ENABLE
         if (cmd_fifo_pop(&cmd_buffer,&cmd)) {
-            printf(">Command:%d\n", cmd);
+            send_ack();
         }
         #endif
         #ifdef IMU_ENABLE

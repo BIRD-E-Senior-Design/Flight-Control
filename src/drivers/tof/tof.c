@@ -39,11 +39,11 @@ int tof_fifo_pop(tof_fifo_t* fifo, tof_measurement* dest) {
 
 void init_tof() {
     //I2C Peripheral
-    i2c_init(i2c0, 400000); //400KHz I2C fast mode
+    i2c_init(i2c0, 1000000);
     gpio_set_function(I2C0_SCL,GPIO_FUNC_I2C);
     gpio_set_function(I2C0_SDA,GPIO_FUNC_I2C);
 
-    //ToF Reset Sequence (IOVDD, AVDD, LPn low then high)
+    //ToF Reset Sequence (LPn low then high)
     gpio_init(25);
     gpio_set_dir(25, true);
     gpio_put(25, false);
