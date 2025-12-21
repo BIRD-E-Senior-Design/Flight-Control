@@ -22,7 +22,7 @@ int main() {
         init_tof();
         printf("finished tof init\n");
     #endif
-    #ifdef IMU_ENABLE
+    #if defined(IMU_EULER_ENABLE) || defined(IMU_QUAT_ENABLE)
         init_imu();
         printf("finished imu init\n");
     #endif

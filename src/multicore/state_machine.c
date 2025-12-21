@@ -7,8 +7,11 @@
 #include "config.h"
 
 void state_machine(void) {
-    #ifdef IMU_ENABLE
+    #ifdef IMU_QUAT_ENABLE
     imu_measurement orientation;
+    #endif
+    #ifdef IMU_EULER_ENABLE
+    imu_measurement angles;
     #endif
     #ifdef TOF_ENABLE
     tof_measurement distance;
@@ -23,7 +26,14 @@ void state_machine(void) {
             send_ack();
         }
         #endif
-        #ifdef IMU_ENABLE
+        #ifdef IMU_EULER_ENABLE
+        if (imu_fifo_pop(&imu_buffer, &angles)) {
+            printf(">Euler X:%f\n", angles.x);
+            printf(">Euler Y:%f\n", angles.y);
+            printf(">Euler Z:%f\n", angles.z);
+        }
+        #endif
+        #ifdef IMU_QUAT_ENABLE
         if (imu_fifo_pop(&imu_buffer, &orientation)) {
             printf(">Quaternion W:%f\n", orientation.w);
             printf(">Quaternion X:%f\n", orientation.x);
