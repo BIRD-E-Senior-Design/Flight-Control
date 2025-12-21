@@ -37,7 +37,7 @@ int imu_fifo_pop(imu_fifo_t* fifo, imu_measurement* dest) {
 }
 
 void read_imu() {
-    uint8_t temp[6];
+    uint8_t temp[8];
     uint8_t internal_reg_addr;
     imu_measurement data_point;
     uint32_t time = timer0_hw->timerawl;
@@ -46,13 +46,15 @@ void read_imu() {
 
     hw_clear_bits(&timer0_hw->intr, 2); //ack interrupt
 
-    internal_reg_addr = 0x1A; //euler x lsb register
+    internal_reg_addr = 0x20; //quaternion W LSB, euler lsb is 0x1A
     i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, true); //set imu internal "reg ptr" 
-    i2c_read_blocking(i2c1,IMU_I2C_ADDR,temp,6,false); //read x, y, z euler angles
+    i2c_read_blocking(i2c1,IMU_I2C_ADDR,temp,8,false); //read x, y, z euler angles
     
-    data_point.x = (int16_t)(temp[1]<<8) | temp[0];
-    data_point.y = (int16_t)(temp[3]<<8) | temp[2];
-    data_point.z = (int16_t)(temp[5]<<8) | temp[4];
+    //scale by 16384.0 for quaternion or 16.0 for euler angles
+    data_point.w = ((int16_t)((temp[1]<<8) | temp[0])) / 16384.0;
+    data_point.x = ((int16_t)((temp[3]<<8) | temp[2])) / 16384.0;
+    data_point.y = ((int16_t)((temp[5]<<8) | temp[4])) / 16384.0;
+    data_point.z = ((int16_t)((temp[7]<<8) | temp[6])) / 16384.0;
     fifo_push(&imu_buffer,data_point);
 
     timer0_hw->alarm[1] = time + (uint32_t) 10000; //reset alarm

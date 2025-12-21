@@ -25,9 +25,10 @@ void state_machine(void) {
         #endif
         #ifdef IMU_ENABLE
         if (imu_fifo_pop(&imu_buffer, &orientation)) {
-            printf(">EulerX:%f\n", orientation.x/16.0);
-            printf(">EulerY:%f\n", orientation.y/16.0);
-            printf(">EulerZ:%f\n", orientation.z/16.0);
+            printf(">Quaternion W:%f\n", orientation.w);
+            printf(">Quaternion X:%f\n", orientation.x);
+            printf(">Quaternion Y:%f\n", orientation.y);
+            printf(">Quaternion Z:%f\n", orientation.z);
         }
         #endif
         #ifdef TOF_ENABLE
