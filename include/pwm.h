@@ -13,6 +13,6 @@ void init_pwm_motor(void);
 * \param bl: back left
 * \param br: back right
 */
-void set_motors(uint fl, uint fr, uint bl, uint br);
+void set_motors(int fl, int fr, int bl, int br);
 
 #endif

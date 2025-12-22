@@ -34,7 +34,7 @@ void init_pwm_motor(void) {
     pwm_hw->slice[SLICE_BACK].csr = 0x1; //enable pwm
 }
 
-void set_motors(uint fl, uint fr, uint bl, uint br) {
+void set_motors(int fl, int fr, int bl, int br) {
     pwm_set_chan_level(SLICE_FRONT,CHAN_LEFT,fl);
     pwm_set_chan_level(SLICE_FRONT,CHAN_RIGHT,fr);
     pwm_set_chan_level(SLICE_BACK,CHAN_LEFT,bl);

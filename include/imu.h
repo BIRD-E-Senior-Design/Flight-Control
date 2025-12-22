@@ -2,17 +2,18 @@
 #define IMU_H
 
 #include "pico/critical_section.h"
-#include "config.h"
-
 //IMU measurement type
 
 typedef struct {
-    float x;
-    float y;
-    float z;
-    #ifdef IMU_QUAT_ENABLE
-    float w;
-    #endif
+    float angle_x;
+    float angle_y;
+    float angle_z;
+    float gyro_x;
+    float gyro_y;
+    float gyro_z;
+    float acc_x;
+    float acc_y;
+    float acc_z;
 } imu_measurement;
 
 //IMU buffer type

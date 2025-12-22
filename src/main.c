@@ -6,7 +6,6 @@
 #include "pwm.h"
 #include "rpz.h"
 #include "state_machine.h"
-#include "config.h"
 
 void start_polling() {
     timer0_hw->alarm[0] = timer0_hw->timerawl + (uint32_t) 20000; //set running
@@ -18,22 +17,14 @@ int main() {
     stdio_init_all();
     //initialize imu, tof, and motor pwm
     printf("starting init\n");
-    #ifdef TOF_ENABLE
-        init_tof();
-        printf("finished tof init\n");
-    #endif
-    #if defined(IMU_EULER_ENABLE) || defined(IMU_QUAT_ENABLE)
-        init_imu();
-        printf("finished imu init\n");
-    #endif
-    #ifdef RPZ_ENABLE
-        init_rpz();
-        printf("finished rpz init\n");
-    #endif
-    #ifdef PWM_ENABLE
-        init_pwm_motor();
-        printf("finished pwm init\n");
-    #endif
+    init_tof();
+    printf("finished tof init\n");
+    init_imu();
+    printf("finished imu init\n");
+    init_rpz();
+    printf("finished rpz init\n");
+    init_pwm_motor();
+    printf("finished pwm init\n");
     //launch second core
     multicore_launch_core1(state_machine);
     printf("core 1 launched\n");

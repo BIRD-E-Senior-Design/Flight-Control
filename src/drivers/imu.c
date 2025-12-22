@@ -4,12 +4,14 @@
 #include "hardware/i2c.h"
 #include "hardware/timer.h"
 #include "imu.h"
-#include "config.h"
 
 //Constants
 #define I2C1_SDA 30
 #define I2C1_SCL 31
 #define IMU_I2C_ADDR 0x29 //(0101001b)
+#define EULER_ADDR 0x1A
+#define GYRO_ADDR 0x14
+#define ACC_ADDR 0x08
 
 imu_fifo_t imu_buffer;
 
@@ -38,12 +40,7 @@ int imu_fifo_pop(imu_fifo_t* fifo, imu_measurement* dest) {
 }
 
 void read_imu() {
-    #ifdef IMU_QUAT_ENABLE
-    uint8_t temp[8];
-    #endif
-    #ifdef IMU_EULER_ENABLE
     uint8_t temp[6];
-    #endif
     uint8_t internal_reg_addr;
     imu_measurement data_point;
     uint32_t time = timer0_hw->timerawl;
@@ -52,30 +49,31 @@ void read_imu() {
 
     hw_clear_bits(&timer0_hw->intr, 2); //ack interrupt
 
+    //EULER ANGLE DATA
+    internal_reg_addr = EULER_ADDR; 
+    i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, true); 
+    i2c_read_blocking(i2c1,IMU_I2C_ADDR,temp,6,false); 
+    data_point.angle_x = ((int16_t)((temp[1]<<8) | temp[0])) / 16.0;
+    data_point.angle_y = ((int16_t)((temp[3]<<8) | temp[2])) / 16.0;
+    data_point.angle_z = ((int16_t)((temp[5]<<8) | temp[4])) / 16.0;
 
-    #ifdef IMU_QUAT_ENABLE
-    internal_reg_addr = 0x20; //quaternion W LSB, euler lsb is 0x1A
-    i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, true); //set imu internal "reg ptr" 
-    i2c_read_blocking(i2c1,IMU_I2C_ADDR,temp,8,false); //read x, y, z euler angles
-    
-    //scale by 16384.0 for quaternion or 16.0 for euler angles
-    data_point.w = ((int16_t)((temp[1]<<8) | temp[0])) / 16384.0;
-    data_point.x = ((int16_t)((temp[3]<<8) | temp[2])) / 16384.0;
-    data_point.y = ((int16_t)((temp[5]<<8) | temp[4])) / 16384.0;
-    data_point.z = ((int16_t)((temp[7]<<8) | temp[6])) / 16384.0;
-    #endif
-    #ifdef IMU_EULER_ENABLE
-    internal_reg_addr = 0x1A; //quaternion W LSB, euler lsb is 0x1A
-    i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, true); //set imu internal "reg ptr" 
-    i2c_read_blocking(i2c1,IMU_I2C_ADDR,temp,6,false); //read x, y, z euler angles
-    
-    //scale by 16.0 for euler angles
-    data_point.x = ((int16_t)((temp[1]<<8) | temp[0])) / 16.0;
-    data_point.y = ((int16_t)((temp[3]<<8) | temp[2])) / 16.0;
-    data_point.z = ((int16_t)((temp[5]<<8) | temp[4])) / 16.0;
-    #endif
+    //GYROSCOPE DATA
+    internal_reg_addr = GYRO_ADDR;
+    i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
+    i2c_read_blocking(i2c1,IMU_I2C_ADDR,temp,6,false); 
+    data_point.gyro_x = ((int16_t)((temp[1]<<8) | temp[0])) / 16.0;
+    data_point.gyro_y = ((int16_t)((temp[3]<<8) | temp[2])) / 16.0;
+    data_point.gyro_z = ((int16_t)((temp[5]<<8) | temp[4])) / 16.0;
+
+    //ACCELEROMETER DATA
+    internal_reg_addr = ACC_ADDR;
+    i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
+    i2c_read_blocking(i2c1,IMU_I2C_ADDR,temp,6,false);
+    data_point.acc_x = ((int16_t)((temp[1]<<8) | temp[0])) / 100.0;
+    data_point.acc_y = ((int16_t)((temp[3]<<8) | temp[2])) / 100.0;
+    data_point.acc_z = ((int16_t)((temp[5]<<8) | temp[4])) / 100.0;
+
     fifo_push(&imu_buffer,data_point);
-
     timer0_hw->alarm[1] = time + (uint32_t) 10000; //reset alarm
 
     critical_section_exit(&imu_buffer.lock); 
@@ -83,13 +81,6 @@ void read_imu() {
 
 void init_imu() {
     uint8_t config_data[2];
-
-    //IMU reset pin
-    // gpio_init(38);
-    // gpio_set_dir(38, true);
-    // gpio_put(38, false);
-    // sleep_ms(10);
-    // gpio_put(38, true);
 
     //I2C Peripheral
     i2c_init(i2c1, 400000); //400 KHz: i2c fast mode
