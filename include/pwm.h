@@ -7,27 +7,12 @@
 void init_pwm_motor(void);
 
 /*!
-* \brief Sets the front left motor speed
-* \param level: motor speed on a scale from 0-1000 where 1000 is maximum
+* \brief Sets the motor speeds on a scale from 0-1000 where 1000 is maximum
+* \param fl: front left
+* \param fr: front right
+* \param bl: back left
+* \param br: back right
 */
-void set_front_left(int level);
-
-/*!
-* \brief Sets the front right motor speed
-* \param level: motor speed on a scale from 0-1000 where 1000 is maximum
-*/
-void set_front_right(int level);
-
-/*!
-* \brief Sets the back left motor speed
-* \param level: motor speed on a scale from 0-1000 where 1000 is maximum
-*/
-void set_back_left(int level);
-
-/*!
-* \brief Sets the back right motor speed
-* \param level: motor speed on a scale from 0-1000 where 1000 is maximum
-*/
-void set_back_right(int level);
+void set_motors(int fl, int fr, int bl, int br);
 
 #endif
