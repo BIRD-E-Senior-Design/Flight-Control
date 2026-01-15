@@ -97,6 +97,8 @@ void read_tof() {
     fifo_push(&tof_buffer,meas);
 
     timer0_hw->alarm[0] = time + (uint32_t) 20000; //reset alarm
+    
+    printf(">Distance: %d\n", distance);
 
     critical_section_exit(&tof_buffer.lock);
 }

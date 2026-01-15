@@ -31,7 +31,7 @@ int main() {
     start_polling();
     printf("polling started\n");
     
-    //infinite loop to print tof values
+    //infinite loop
     for (;;) {
         tight_loop_contents();
     }

@@ -76,6 +76,10 @@ void read_imu() {
     fifo_push(&imu_buffer,data_point);
     timer0_hw->alarm[1] = time + (uint32_t) 10000; //reset alarm
 
+    printf(">Angle X: %f\n", data_point.angle_x);
+    printf(">Angle Y: %f\n", data_point.angle_y);
+    printf(">Angle Z: %f\n", data_point.angle_z);
+
     critical_section_exit(&imu_buffer.lock); 
 }
 
