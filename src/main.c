@@ -6,6 +6,7 @@
 #include "pwm.h"
 #include "rpz.h"
 #include "state_machine.h"
+#include "altimeter.h"
 
 void start_polling() {
     timer0_hw->alarm[0] = timer0_hw->timerawl + (uint32_t) 20000; //set running
@@ -25,12 +26,13 @@ int main() {
     printf("finished rpz init\n");
     init_pwm_motor();
     printf("finished pwm init\n");
+    temp_pressure_int_setup();
+    printf("finished mpl setup\n");
     //launch second core
     multicore_launch_core1(state_machine);
     printf("core 1 launched\n");
     start_polling();
     printf("polling started\n");
-    
     //infinite loop
     for (;;) {
         tight_loop_contents();
