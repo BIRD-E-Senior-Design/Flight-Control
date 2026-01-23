@@ -3,6 +3,7 @@
 #include "hardware/i2c.h"
 #include "hardware/gpio.h"
 #include "altimeter.h"
+#include "hardware/timer.h"
 
 void init_altimeter() {
     
@@ -21,6 +22,11 @@ void init_altimeter() {
     gpio_pull_up(I2C_SCL);
 
     temp_pressure_int_setup();
+
+    //Timer & Alarm
+    timer0_hw->inte |= 1 << 2;
+    irq_set_exclusive_handler(TIMER0_IRQ_2, altimeter_handler);
+    irq_set_enabled(TIMER0_IRQ_2, true);
 }
 
 void temp_pressure_int_setup() {
@@ -72,6 +78,10 @@ void temp_pressure_int_setup() {
 
 void altimeter_handler() {
     printf("entering altimeter handler...\n");
+
+    uint32_t time = timer0_hw->timerawl;
+    hw_clear_bits(&timer0_hw->intr, 1 << 3); //ack interrupt
+
     uint8_t int_source; 
     int bytes_read = i2c_read_blocking(i2c1, 0x12, &int_source, 1, false); // this read clears the entire interrupt status reg 
     if (bytes_read == PICO_ERROR_GENERIC) { printf("Error (altimeter_handler): Cannot read from MPL Interrupt Source Register (0x12).\n"); }
@@ -83,6 +93,7 @@ void altimeter_handler() {
         pchg_handler_helper();
     }
 
+    timer0_hw->alarm[2] = time + (uint32_t) 20000; //reset alarm
 }
 
 void tchg_handler_helper() {

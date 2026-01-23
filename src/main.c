@@ -11,6 +11,7 @@
 void start_polling() {
     timer0_hw->alarm[0] = timer0_hw->timerawl + (uint32_t) 20000; //set running
     timer0_hw->alarm[1] = timer0_hw->timerawl + (uint32_t) 10000;
+    timer0_hw->alarm[2] = timer0_hw->timerawl + (uint32_t) 20000;
 }
 
 int main() {
@@ -18,25 +19,25 @@ int main() {
     stdio_init_all();
     //initialize imu, tof, and motor pwm
     printf("starting init\n");
-    init_tof();
-    printf("finished tof init\n");
+    //init_tof();
+    //printf("finished tof init\n");
     init_imu();
     printf("finished imu init\n");
-    init_rpz();
-    printf("finished rpz init\n");
-    init_pwm_motor();
-    printf("finished pwm init\n");
-    temp_pressure_int_setup();
-    printf("finished mpl setup\n");
+    //init_rpz();
+    //printf("finished rpz init\n");
+    //init_pwm_motor();
+    //printf("finished pwm init\n");
+    //temp_pressure_int_setup();
+    //printf("finished mpl setup\n");
     //launch second core
-    multicore_launch_core1(state_machine);
-    printf("core 1 launched\n");
-    start_polling();
-    printf("polling started\n");
+    //multicore_launch_core1(state_machine);
+    //printf("core 1 launched\n");
+    //start_polling();
+    //printf("polling started\n");
     //infinite loop
-    for (;;) {
-        tight_loop_contents();
-    }
+    // for (;;) {
+    //     tight_loop_contents();
+    // }
     
     return 0;
 }
