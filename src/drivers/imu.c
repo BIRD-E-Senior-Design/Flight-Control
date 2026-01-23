@@ -93,39 +93,21 @@ void init_imu() {
     gpio_set_function(I2C1_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C1_SCL, GPIO_FUNC_I2C);
 
+    config_data[0] = 0x3F; //SYS_TRIGGER register
+    config_data[1] = 0x20; //RST_SYS
+    i2c_write_blocking(i2c1, IMU_I2C_ADDR,config_data, 2, false);
+    sleep_ms(800);
+
     internal_reg_addr = 0x3D;
     i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
     i2c_read_blocking(i2c1,IMU_I2C_ADDR,&temp,1,false);
     printf("Config Mode 1: %x\n", temp & 0xf);
+    
 
     config_data[0] = 0x3D; //opr_mode register
     config_data[1] = 0x0C; //NDOF fusion mode
     i2c_write_blocking(i2c1, IMU_I2C_ADDR, config_data, 2, false);
 
-    internal_reg_addr = 0x3D;
-    i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
-    i2c_read_blocking(i2c1,IMU_I2C_ADDR,&temp,1,false);
-    printf("Config Mode before reset: %x\n", temp & 0xf);
-
-    //ToF Reset Sequence (LPn low then high)
-    // gpio_init(37);
-    // gpio_set_dir(37, true);
-    // gpio_put(37, false);
-    // sleep_us(1);
-    // gpio_put(37, true);
-
-    config_data[0] = 0x3D; //opr_mode register
-    config_data[1] = 0x00; //NDOF fusion mode
-    i2c_write_blocking(i2c1, IMU_I2C_ADDR, config_data, 2, false);
-
-    //config_data[0] = 0x20; //RST_SYS
-    //i2c_write_blocking(i2c1, IMU_I2C_ADDR,config_data, 1, false);
-    sleep_ms(25);
-
-    internal_reg_addr = 0x3D;
-    i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
-    i2c_read_blocking(i2c1,IMU_I2C_ADDR,&temp,1,false);
-    printf("Config Mode after reset: %x\n", temp & 0xf);
 
     //Buffer initialization
     imu_buffer.count = 0;
