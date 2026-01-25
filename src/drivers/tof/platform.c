@@ -98,7 +98,7 @@ uint8_t VL53L5CX_RdMulti(
 	
 	uint8_t temp[2] = {RegisterAdress >> 8, RegisterAdress & 0xff};
 
-	i2c_write_blocking(i2c0,TOF_I2C_ADDR,&temp,2,true);
+	i2c_write_blocking(i2c0,TOF_I2C_ADDR,temp,2,true);
 	i2c_read_blocking(i2c0,TOF_I2C_ADDR,p_values,size,false);
 
 	status = 0;

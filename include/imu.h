@@ -25,8 +25,26 @@ typedef struct {
     critical_section_t lock; 
 } imu_fifo_t; 
 
+//IMU Calibration Data type
+typedef struct {
+    uint16_t acc_off_x;
+    uint16_t acc_off_y;
+    uint16_t acc_off_z;
+    uint16_t mag_off_x;
+    uint16_t mag_off_y;
+    uint16_t mag_off_z;
+    uint16_t gyro_off_x;
+    uint16_t gyro_off_y;
+    uint16_t gyro_off_z;
+    uint16_t acc_rad;
+    uint16_t mag_rad;
+    uint8_t valid;
+} imu_calibration_t;
+
 //shared memory imu buffer
 extern imu_fifo_t imu_buffer;
+
+void reset_imu();
 
 void init_imu();
 
