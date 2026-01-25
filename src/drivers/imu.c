@@ -34,6 +34,8 @@
 #define OPR_MODE_ADDR 0x3D
 #define CALIB_STAT_ADDR 0x35
 #define ACC_OFFSET_ADDR 0x55
+#define NDOF_MODE 0x0C
+#define CONFIG_MODE 0x00
 
 imu_fifo_t imu_buffer;
 
@@ -180,18 +182,29 @@ void reset_imu() {
     }  
 }
 
+/*  Startup Sequence
+    1. I2C Setup
+    2. GPIO Pin Setup
+    3. Reset
+    4. Program Calibration Data
+    5. Swap to NDOF & Check Calibration Status
+    6. Swap to Config & Save Data to Flash
+    7. Swap to NDOF
+    8. Shared Buffer Setup
+    9. Timer & Alarm Setup
+*/
 void init_imu() {
     uint8_t config_data[23];
     uint8_t temp[22];
     uint8_t internal_reg_addr;
     uint8_t flash_buffer[256] = {0};
 
-    //I2C Peripheral
+    //1.
     i2c_init(i2c1, 400000); //400 KHz: i2c fast mode
     gpio_set_function(I2C1_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C1_SCL, GPIO_FUNC_I2C);
 
-    //GPIO Pins
+    //2.
     gpio_init(IMU_INT);
     gpio_init(IMU_RESET_PIN);
     gpio_init(IMU_HARD_RESET);
@@ -205,65 +218,74 @@ void init_imu() {
     gpio_set_dir(IMU_PS0, true);
     gpio_set_dir(IMU_PS1, true);
 
-    /*  Startup Sequence
-    1. reset
-    2. calibration check & data load
-    4. switch to NDOF fusion mode
-    */
-
     #ifdef LOG_MODE
         printf("Starting IMU Reset Sequence\n");
     #endif
+
+    //3.
     reset_imu();
 
     #ifdef LOG_MODE
-        printf("Starting IMU Config Sequence\n");
+        printf("Starting IMU Calibration Sequence\n");
     #endif
+
+    //4.
+    get_calib_data(flash_buffer); 
+    memcpy(config_data[1],flash_buffer, 22);
+
+    config_data[0] = ACC_OFFSET_ADDR;
+    i2c_write_blocking(i2c1, IMU_I2C_ADDR, config_data, 23, false);
+
+    //5.
     config_data[0] = OPR_MODE_ADDR;
-    config_data[1] = 0x0C; //NDOF fusion mode
+    config_data[1] = NDOF_MODE; //NDOF fusion mode
     i2c_write_blocking(i2c1, IMU_I2C_ADDR, config_data, 2, false);
     sleep_ms(25);
-    
-    //initial calibration check
-    while (true) {
+
+    do {
         internal_reg_addr = CALIB_STAT_ADDR; 
         i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, false);
-        i2c_read_blocking(i2c1,IMU_I2C_ADDR,temp,1,false);
+        i2c_read_blocking(i2c1,IMU_I2C_ADDR,flash_buffer,1,false);
 
-        if (temp[0] == 0xff) {
-            break;
-        }
         #ifdef LOG_MODE
-            printf("Calibration Status (System, Gyro, Accel, Magnet) %x %x %x %x\n",(temp[0] & 0xc0) >> 6,(temp[0] & 0x30) >> 4,(temp[0] & 0x0c) >> 2,(temp[0] & 0x03));
+            printf("Calibration Status (System, Gyro, Accel, Magnet) %x %x %x %x\n",(flash_buffer[0] & 0xc0) >> 6,(flash_buffer[0] & 0x30) >> 4,(flash_buffer[0] & 0x0c) >> 2,(flash_buffer[0] & 0x03));
         #endif
-        sleep_ms(2000);
-    }
 
+        sleep_ms(2000);
+    } while (flash_buffer[0] == 0xff);
+
+    //6.
     config_data[0] = OPR_MODE_ADDR;
-    config_data[1] = 0x00; //Config mode
+    config_data[1] = CONFIG_MODE;
     i2c_write_blocking(i2c1, IMU_I2C_ADDR, config_data, 2, false);
     sleep_ms(25);
 
     internal_reg_addr = ACC_OFFSET_ADDR;
     i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, false);
-    i2c_read_blocking(i2c1,IMU_I2C_ADDR,temp,22,false);
+    i2c_read_blocking(i2c1,IMU_I2C_ADDR,flash_buffer,22,false);
 
-    memcpy(flash_buffer,temp,22);
     save_calib_data(flash_buffer);
-    get_calib_data(flash_buffer);
 
-    for (int i = 0; i < 22; i+=2) {
-        printf("%x%x\n",flash_buffer[i+1],flash_buffer[i]);
-    }
+    #ifdef LOG_MODE
+        for (int i = 0; i < 22; i+=2) {
+            printf("%x%x\n",flash_buffer[i+1],flash_buffer[i]);
+        }
+    #endif
+
+    //7.
+    config_data[0] = OPR_MODE_ADDR; 
+    config_data[1] = NDOF_MODE;
+    i2c_write_blocking(i2c1, IMU_I2C_ADDR, config_data, 2, false);
+    sleep_ms(25);
     
 
-    //Buffer Initialization
+    //8.
     imu_buffer.count = 0;
     imu_buffer.head = 0;
     imu_buffer.tail = 0;
     critical_section_init(&imu_buffer.lock);
 
-    //Timer & Alarm Setup
+    //9.
     timer0_hw->inte |= 1 << 1;
     irq_set_exclusive_handler(TIMER0_IRQ_1, read_imu);
     irq_set_enabled(TIMER0_IRQ_1, true);
