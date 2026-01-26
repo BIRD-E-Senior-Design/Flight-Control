@@ -39,7 +39,7 @@ int tof_fifo_pop(tof_fifo_t* fifo, tof_measurement* dest) {
 }
 
 void init_tof() {
-    #ifdef LOG_MODE
+    #ifdef LOG_MODE_0
         printf("Starting ToF Boot Sequence\n");
     #endif
 
@@ -75,7 +75,7 @@ void init_tof() {
     irq_set_exclusive_handler(TIMER0_IRQ_0, read_tof);
     irq_set_enabled(TIMER0_IRQ_0, true);
 
-    #ifdef LOG_MODE
+    #ifdef LOG_MODE_0
         printf("ToF Boot Sequence Complete\n\n");
     #endif
 }
@@ -96,21 +96,22 @@ void read_tof() {
     
     //get distance measurement
     vl53l5cx_get_ranging_data(&tof_config,&data);
-    memcpy(meas.distance,data.distance_mm,sizeof(int16_t)*2);
+    
+    memcpy(meas.grid,data.distance_mm,sizeof(uint16_t)*16);
     fifo_push(&tof_buffer,meas);
 
-    timer0_hw->alarm[0] = time + (uint32_t) 20000; //reset alarm
-    
-    #ifdef LOG_MODE
-    printf("Distance Grid:\n");
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            printf("%d ", meas.distance[i*4 + j]);
+    #ifdef LOG_MODE_0
+        printf("Distance Grid:\n");
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                printf("%d ", meas.grid[i*4 + j]);
+            }
+            printf("\n");
         }
-        printf("\n");
-    }
-    printf("\n\n");
+        printf("\n\n");
     #endif
+
+    timer0_hw->alarm[0] = time + (uint32_t) 20000; //reset alarm
 
     critical_section_exit(&tof_buffer.lock);
 }

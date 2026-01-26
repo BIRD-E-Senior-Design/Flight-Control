@@ -100,7 +100,7 @@ void read_imu() {
     fifo_push(&imu_buffer,data_point);
     timer0_hw->alarm[1] = time + (uint32_t) 10000; //reset alarm
 
-    #ifdef LOG_MODE 
+    #ifdef LOG_MODE_0
         printf(">Angle X: %f\n", data_point.angle_x);
         printf(">Angle Y: %f\n", data_point.angle_y);
         printf(">Angle Z: %f\n", data_point.angle_z);
@@ -143,7 +143,7 @@ void reset_imu() {
     int method = 0;
 
     while (true) { //NEEDS A TIMEOUT BEFORE FLIGHT TESTING, most likely watchdog in case it hangs in an i2c transaction 
-        #ifdef LOG_MODE
+        #ifdef LOG_MODE_0
             printf("Attempting reset with method %d\n", method);
         #endif
 
@@ -170,7 +170,7 @@ void reset_imu() {
         i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
         i2c_read_blocking(i2c1,IMU_I2C_ADDR,&temp,1,false);
 
-        #ifdef LOG_MODE
+        #ifdef LOG_MODE_0
             printf("Config Mode: %x\n", temp & 0xf);
         #endif
 
@@ -221,14 +221,14 @@ void init_imu() {
     gpio_set_dir(IMU_PS0, true);
     gpio_set_dir(IMU_PS1, true);
 
-    #ifdef LOG_MODE
+    #ifdef LOG_MODE_0
         printf("Starting IMU Reset Sequence\n");
     #endif
 
     //3.
     reset_imu();
 
-    #ifdef LOG_MODE
+    #ifdef LOG_MODE_0
         printf("Starting IMU Calibration Sequence\n");
     #endif
 
@@ -251,7 +251,7 @@ void init_imu() {
         i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, false);
         i2c_read_blocking(i2c1,IMU_I2C_ADDR,flash_buffer,1,false);
 
-        #ifdef LOG_MODE
+        #ifdef LOG_MODE_0
             printf("Calibration Status (System, Gyro, Accel, Magnet) %x %x %x %x\n",(flash_buffer[0] & 0xc0) >> 6,(flash_buffer[0] & 0x30) >> 4,(flash_buffer[0] & 0x0c) >> 2,(flash_buffer[0] & 0x03));
         #endif
 
@@ -276,7 +276,7 @@ void init_imu() {
         }
     }
 
-    #ifdef LOG_MODE
+    #ifdef LOG_MODE_0
         for (int i = 0; i < 22; i+=2) {
             printf("%x %x\n",flash_buffer[i+1],flash_buffer[i]);
         }
@@ -299,7 +299,7 @@ void init_imu() {
     irq_set_exclusive_handler(TIMER0_IRQ_1, read_imu);
     irq_set_enabled(TIMER0_IRQ_1, true);
 
-    #ifdef LOG_MODE
+    #ifdef LOG_MODE_0
         printf("IMU Boot Sequence Complete\n\n");
     #endif
 }

@@ -17,7 +17,7 @@
 #define PERIOD 1000
 
 void init_pwm_motor(void) {
-    #ifdef LOG_MODE
+    #ifdef LOG_MODE_0
         printf("Setting up PWM...\n\n");
     #endif
     
@@ -38,7 +38,7 @@ void init_pwm_motor(void) {
     pwm_hw->slice[SLICE_BACK].cc = 0; //default off
     pwm_hw->slice[SLICE_BACK].csr = 0x1; //enable pwm
 
-    #ifdef LOG_MODE
+    #ifdef LOG_MODE_0
         printf("PWM Setup Complete\n\n");
     #endif
 }

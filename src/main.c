@@ -14,7 +14,7 @@ void start_polling() {
     timer0_hw->alarm[1] = timer0_hw->timerawl + (uint32_t) 10000;
     timer0_hw->alarm[2] = timer0_hw->timerawl + (uint32_t) 20000;
 
-    #ifdef LOG_MODE
+    #ifdef LOG_MODE_0
         printf("Core 0 Polling started...\n");
     #endif
 }
@@ -25,13 +25,13 @@ int main() {
     stdio_init_all();
 
     //SENSOR BOOT
-    #ifdef LOG_MODE
+    #ifdef LOG_MODE_0
         printf("SENSOR BOOT...\n\n");
     #endif
-    //init_imu();
+    init_imu();
     init_tof();
-    //init_rpz();
-    //init_pwm_motor();
+    init_rpz();
+    init_pwm_motor();
 
     if (operation_mode) {
         //temp_pressure_int_setup();
@@ -41,7 +41,7 @@ int main() {
     start_polling();
 
     //launch second core
-    //multicore_launch_core1(state_machine);
+    multicore_launch_core1(state_machine);
 
     //infinite loop
     for (;;) {

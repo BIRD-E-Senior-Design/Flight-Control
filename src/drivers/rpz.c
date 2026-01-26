@@ -53,7 +53,7 @@ void get_command() {
 }
 
 void init_rpz() {
-    #ifdef LOG_MODE
+    #ifdef LOG_MODE_0
         printf("RPZ Setup Started...\n\n");
     #endif
 
@@ -76,7 +76,7 @@ void init_rpz() {
     irq_set_exclusive_handler(UART1_IRQ, get_command);
     irq_set_enabled(UART1_IRQ, true);
 
-    #ifdef LOG_MODE
+    #ifdef LOG_MODE_0
         printf("RPZ Setup Complete\n\n");
     #endif
 }
