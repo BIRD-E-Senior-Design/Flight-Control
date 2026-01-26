@@ -100,9 +100,11 @@ void read_imu() {
     fifo_push(&imu_buffer,data_point);
     timer0_hw->alarm[1] = time + (uint32_t) 10000; //reset alarm
 
-    printf(">Angle X: %f\n", data_point.angle_x);
-    printf(">Angle Y: %f\n", data_point.angle_y);
-    printf(">Angle Z: %f\n", data_point.angle_z);
+    #ifdef LOG_MODE 
+        printf(">Angle X: %f\n", data_point.angle_x);
+        printf(">Angle Y: %f\n", data_point.angle_y);
+        printf(">Angle Z: %f\n", data_point.angle_z);
+    #endif
 
     critical_section_exit(&imu_buffer.lock); 
 }
@@ -111,7 +113,7 @@ void read_imu() {
 void __no_inline_not_in_flash_func(get_calib_data)(uint8_t* buffer) {
     uint32_t int_status = save_and_disable_interrupts();
 
-    memcpy(buffer,(void *)CALIB_FLASH_ADDRESS,256);
+    memcpy(buffer,(void *)CALIB_FLASH_ADDRESS,sizeof(int8_t)*256);
 
     restore_interrupts(int_status);
 }
@@ -188,14 +190,15 @@ void reset_imu() {
     3. Reset
     4. Program Calibration Data
     5. Swap to NDOF & Check Calibration Status
-    6. Swap to Config & Save Data to Flash
-    7. Swap to NDOF
-    8. Shared Buffer Setup
-    9. Timer & Alarm Setup
+    6. Swap to Config
+    7. Save Config Data if Changed
+    8. Swap to NDOF
+    9. Shared Buffer Setup
+    10. Timer & Alarm Setup
 */
 void init_imu() {
     uint8_t config_data[23];
-    uint8_t temp[22];
+    uint8_t old_calib_data[22];
     uint8_t internal_reg_addr;
     uint8_t flash_buffer[256] = {0};
 
@@ -231,7 +234,8 @@ void init_imu() {
 
     //4.
     get_calib_data(flash_buffer); 
-    memcpy(config_data[1],flash_buffer, 22);
+    memcpy(&config_data[1],flash_buffer, sizeof(int8_t)*22);
+    memcpy(old_calib_data,flash_buffer, sizeof(int8_t)*22);
 
     config_data[0] = ACC_OFFSET_ADDR;
     i2c_write_blocking(i2c1, IMU_I2C_ADDR, config_data, 23, false);
@@ -252,7 +256,7 @@ void init_imu() {
         #endif
 
         sleep_ms(2000);
-    } while (flash_buffer[0] == 0xff);
+    } while (flash_buffer[0] != 0xff);
 
     //6.
     config_data[0] = OPR_MODE_ADDR;
@@ -260,32 +264,37 @@ void init_imu() {
     i2c_write_blocking(i2c1, IMU_I2C_ADDR, config_data, 2, false);
     sleep_ms(25);
 
+    //7.
     internal_reg_addr = ACC_OFFSET_ADDR;
     i2c_write_blocking(i2c1, IMU_I2C_ADDR, &internal_reg_addr, 1, false);
     i2c_read_blocking(i2c1,IMU_I2C_ADDR,flash_buffer,22,false);
-
-    save_calib_data(flash_buffer);
+    
+    for (int i = 0; i < 22; i++) {
+        if (old_calib_data[i] != flash_buffer[i]) {
+            save_calib_data(flash_buffer);
+            break;
+        }
+    }
 
     #ifdef LOG_MODE
         for (int i = 0; i < 22; i+=2) {
-            printf("%x%x\n",flash_buffer[i+1],flash_buffer[i]);
+            printf("%x %x\n",flash_buffer[i+1],flash_buffer[i]);
         }
     #endif
 
-    //7.
+    //8.
     config_data[0] = OPR_MODE_ADDR; 
     config_data[1] = NDOF_MODE;
     i2c_write_blocking(i2c1, IMU_I2C_ADDR, config_data, 2, false);
     sleep_ms(25);
     
-
-    //8.
+    //9.
     imu_buffer.count = 0;
     imu_buffer.head = 0;
     imu_buffer.tail = 0;
     critical_section_init(&imu_buffer.lock);
 
-    //9.
+    //10.
     timer0_hw->inte |= 1 << 1;
     irq_set_exclusive_handler(TIMER0_IRQ_1, read_imu);
     irq_set_enabled(TIMER0_IRQ_1, true);

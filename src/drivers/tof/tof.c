@@ -5,6 +5,7 @@
 #include "tof/tof.h"
 #include "tof/platform.h"
 #include "tof/vl53l5cx_api.h"
+#include "config.h"
 
 #define I2C0_SDA 28
 #define I2C0_SCL 29
@@ -38,6 +39,10 @@ int tof_fifo_pop(tof_fifo_t* fifo, tof_measurement* dest) {
 }
 
 void init_tof() {
+    #ifdef LOG_MODE
+        printf("Starting ToF Boot Sequence\n");
+    #endif
+
     //I2C Peripheral
     i2c_init(i2c0, 1000000);
     gpio_set_function(I2C0_SCL,GPIO_FUNC_I2C);
@@ -69,11 +74,14 @@ void init_tof() {
     timer0_hw->inte |= 1 << 0;
     irq_set_exclusive_handler(TIMER0_IRQ_0, read_tof);
     irq_set_enabled(TIMER0_IRQ_0, true);
+
+    #ifdef LOG_MODE
+        printf("ToF Boot Sequence Complete\n\n");
+    #endif
 }
 
 void read_tof() {
     uint8_t dataready = 1;
-    int16_t distance = 0x7fff; //max integer
     tof_measurement meas;
     uint32_t time = timer0_hw->timerawl;
 
@@ -86,19 +94,23 @@ void read_tof() {
         vl53l5cx_check_data_ready(&tof_config, &dataready);
     }
     
-    //get distance measurement, take minimum for most conservative crash avoidance
+    //get distance measurement
     vl53l5cx_get_ranging_data(&tof_config,&data);
-    for (int i=0; i<16; i++) {
-        if (data.distance_mm[i] < distance) {
-            distance = data.distance_mm[i];
-        }
-    }
-    meas.distance = distance;
+    memcpy(meas.distance,data.distance_mm,sizeof(int16_t)*2);
     fifo_push(&tof_buffer,meas);
 
     timer0_hw->alarm[0] = time + (uint32_t) 20000; //reset alarm
     
-    printf(">Distance: %d\n", distance);
+    #ifdef LOG_MODE
+    printf("Distance Grid:\n");
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            printf("%d ", meas.distance[i*4 + j]);
+        }
+        printf("\n");
+    }
+    printf("\n\n");
+    #endif
 
     critical_section_exit(&tof_buffer.lock);
 }

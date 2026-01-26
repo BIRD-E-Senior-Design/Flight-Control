@@ -4,7 +4,7 @@
 #include "pico/critical_section.h"
 
 typedef struct {
-    int16_t distance;
+    int16_t distance[16];
 } tof_measurement;
 
 typedef struct {

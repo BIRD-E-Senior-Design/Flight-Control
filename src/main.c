@@ -3,7 +3,7 @@
 #include "pico/multicore.h"
 #include "tof/tof.h"
 #include "imu.h"
-#include "pwm.h"
+#include "motor.h"
 #include "rpz.h"
 #include "state_machine.h"
 #include "altimeter.h"
@@ -28,8 +28,8 @@ int main() {
     #ifdef LOG_MODE
         printf("SENSOR BOOT...\n\n");
     #endif
-    init_imu();
-    //init_tof();
+    //init_imu();
+    init_tof();
     //init_rpz();
     //init_pwm_motor();
 
@@ -38,13 +38,15 @@ int main() {
         //add in PMW3901MB setup when finished
     }
 
+    start_polling();
+
     //launch second core
     //multicore_launch_core1(state_machine);
 
     //infinite loop
-    // for (;;) {
-    //     tight_loop_contents();
-    // }
+    for (;;) {
+        tight_loop_contents();
+    }
     
     return 0;
 }

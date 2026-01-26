@@ -3,6 +3,7 @@
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
 #include "pico/critical_section.h"
+#include "config.h"
 
 
 cmd_fifo_t cmd_buffer;
@@ -52,6 +53,10 @@ void get_command() {
 }
 
 void init_rpz() {
+    #ifdef LOG_MODE
+        printf("RPZ Setup Started...\n\n");
+    #endif
+
     //pins
     gpio_set_function(36, GPIO_FUNC_UART);
     gpio_set_function(37, GPIO_FUNC_UART);
@@ -70,5 +75,9 @@ void init_rpz() {
     uart_set_irqs_enabled(uart1, true, false);
     irq_set_exclusive_handler(UART1_IRQ, get_command);
     irq_set_enabled(UART1_IRQ, true);
+
+    #ifdef LOG_MODE
+        printf("RPZ Setup Complete\n\n");
+    #endif
 }
 
