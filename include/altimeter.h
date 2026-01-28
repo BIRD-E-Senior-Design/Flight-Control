@@ -53,7 +53,7 @@ void read_altimeter();
 
 void toggle_one_shot(); 
 
-/*! \brief Catch all handler for interrupts generated on INT1 and INT2 */
+/*! \brief Catch all handler for interrupts g   enerated on INT1 and INT2 */
 float altimeter_handler();
 
 

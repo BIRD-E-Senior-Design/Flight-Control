@@ -4,10 +4,8 @@
 #include "hardware/gpio.h"
 #include "altimeter.h"
 
-
-
 void init_altimeter_pins() {
-    
+
     // Initiallize the pins that the interrupt pins are connected to
     gpio_init(ALT_INT1);
     gpio_init(ALT_INT2);
@@ -17,6 +15,7 @@ void init_altimeter_pins() {
     gpio_add_raw_irq_handler_masked(mask, altimeter_handler);  // has to be masked bc reading src will auto clear all pending interrupts
     gpio_set_irq_enabled(ALT_INT1, GPIO_IRQ_LEVEL_LOW, true);
     gpio_set_irq_enabled(ALT_INT2, GPIO_IRQ_LEVEL_LOW, true);
+    irq_set_enabled(IO_IRQ_BANK0, true);
     
     // Set up I2C pins on master
     i2c_init(i2c1, 400 * 1000); 
@@ -33,50 +32,58 @@ void init_altimeter() {
     uint8_t config[2]; // {register, data}
     uint8_t data;
 
-    reg = MPL3115A2_WHOAMI;    
-    i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true);
-    i2c_read_blocking(i2c1, MPL3115A2_ADDR, &data, 1, false);
-    if (data != 196) { printf("Device not recognized as MPL3115A2\n"); }
+    // reg = MPL3115A2_WHOAMI;    
+    // i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true);
+    // i2c_read_blocking(i2c1, MPL3115A2_ADDR, &data, 1, false);
+    // if (data != 196) { printf("Device not recognized as MPL3115A2\n"); }
 
     // set altimeter mode and OSR = 4
     config[0] = MPL3115A2_CTRLREG1; 
-    config[1] = 0b10100000;
+    config[1] = 0b10010000;
     i2c_write_blocking(i2c1, MPL3115A2_ADDR, config, 2, false);
+    printf("Set altimeter and OSR = 4\n");
 
-    // configure INT2 pins 
+    // configure INT2 pins as active low open drain;
     config[0] = MPL3115A2_CTRLREG3;
-    config[1] = 0x11; 
+    config[1] = 0b01;
     i2c_write_blocking(i2c1, MPL3115A2_ADDR, config, 2, false);
+    printf("Configured INT2 pins.\n");
 
     // enable DRDY interrupt for dataRDY  
     config[0] = MPL3115A2_CTRLREG4; 
     config[1] = 0x80; // thank you datasheet
     i2c_write_blocking(i2c1, MPL3115A2_ADDR, config, 2, false);
+    printf("Enabled DRDY interrupt for dataRDY\n");
 }
 
 void toggle_one_shot() {
-
+    // printf("Toggling One Shot\n");
     // read current settings
     uint8_t reg = MPL3115A2_CTRLREG1; 
     uint8_t data;
     i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true);
     i2c_read_blocking(i2c1, MPL3115A2_ADDR, &data, 1, false); 
+    // printf("Read current settings\n");
 
     // clear the OST bit
     uint8_t config[2];
     config[0] = MPL3115A2_CTRLREG1;
     config[1] = data & ~(1<<1); 
-    i2c_write_blocking(i2c1, MPL3115A2_ADDR, config, 2, true);
+    i2c_write_blocking(i2c1, MPL3115A2_ADDR, config, 2, false);
+    // printf("Cleared OST bit.\n");
 
     // read current config again 
     reg = MPL3115A2_CTRLREG1;
     i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true); 
     i2c_read_blocking(i2c1, MPL3115A2_ADDR, &data, 1, false); 
+    // printf("Read current settings again.\n");
 
     // set the ost bit. 
     config[0] = MPL3115A2_CTRLREG1; 
     config[1] = data | (1<<1); 
-    i2c_write(i2c1, MPL3115A2_ADDR, &data, 2, false);
+    i2c_write_blocking(i2c1, MPL3115A2_ADDR, &data, 2, false);
+    
+    // this will auto clear itself once the measurement is finished.
 }
 
 
@@ -124,13 +131,13 @@ void temp_pressure_int_setup() {
 
     config[0] = MPL3115A2_CTRLREG4; // CTRL_REG_4 interrupt enable register
     config[1] = 0xB0; // INT_EN_DRDY
-    i2c_write_blocking(i2c1, MPL3115A2_ADDR, config, 2, true);
+    i2c_write_blocking(i2c1, MPL3115A2_ADDR, config, 2, false);
     printf("configured DRDY interrupt\n");
 
     // Set Device Active 
     config[0] = MPL3115A2_CTRLREG1; // CTRL_REG1 Register 
     config[1] = 0xB9; // ALT | OSR[2:0] | SBYB: Retain previous altimeter config with the addition of let the sensor run its course
-    i2c_write_blocking(i2c1, MPL3115A2_ADDR, config, 2, true);
+    i2c_write_blocking(i2c1, MPL3115A2_ADDR, config, 2, false);
     printf("set device active. initialization routine finished \n");
 }
 
@@ -142,59 +149,59 @@ float altimeter_handler() {
     uint8_t int_source; 
     
     reg = MPL3115A2_INTSOURCE;
-    i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true); 
-    int bytes_read = i2c_read_blocking(i2c1, MPL3115A2_ADDR, &int_source, 1, false); // this read clears the entire interrupt status reg 
-    if (bytes_read == PICO_ERROR_GENERIC) { printf("Error (altimeter_handler): Cannot read from MPL Interrupt Source Register (0x12).\n"); }
-
-    
-    // if (int_source & 0x1){ // SRC_TCHG: Delta Temp INTS bit 
-    //     tchg_handler_helper();
-    // }
-    // else if (int_source & 0x2) { // SRC_PCHG: Delta ALtitude INTS bit
-    //     pchg_handler_helper();
-    // }
-    if (int_source == 0x80) {
-        
-        uint8_t out_t_msb; 
-        uint8_t out_t_lsb; 
-
-        reg = MPL3115A2_OUTPMSB;
-        i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true); 
-        bytes_read = i2c_read_blocking(i2c1, MPL3115A2_ADDR, &out_t_msb, 1, false); 
-        if (bytes_read == PICO_ERROR_GENERIC) { printf("Error (tchg_handler_helper): Cannot read from MPL Temperature Output MSB (0x04).\n"); }
-        
-        reg = MPL3115A2_OUTTLSB;
-        i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true); 
-        bytes_read = i2c_read_blocking(i2c1, MPL3115A2_ADDR, &out_t_lsb, 1, false); 
-        if (bytes_read == PICO_ERROR_GENERIC) { printf("Error (tchg_handler_helper): Cannot read from MPL Temperature Output CSB (0x05).\n"); }
-
-        // convert from Q12.4
-        float temperature = ((out_t_msb << 8) | out_t_lsb) / 256.0; 
-        printf("Temperature: %f\u00B0C\n", temperature);
-
-        uint8_t out_p_msb; 
-        uint8_t out_p_csb; 
-        uint8_t out_p_lsb; 
-        
-        reg =  MPL3115A2_OUTPMSB;
-        i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true); 
-        bytes_read = i2c_read_blocking(i2c1, MPL3115A2_ADDR, &out_p_msb, 1, false); 
-        if (bytes_read == PICO_ERROR_GENERIC) { printf("Error (pchg_handler_helper): Cannot read from MPL Pressure/Altimeter Output MSB (0x01).\n"); }
-        
-        reg = MPL3115A2_OUTPCSB; 
-        i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true); 
-        bytes_read = i2c_read_blocking(i2c1, MPL3115A2_ADDR, &out_p_csb, 1, false); 
-        if (bytes_read == PICO_ERROR_GENERIC) { printf("Error (pchg_handler_helper): Cannot read from MPL Pressure/Altimeter Output CSB (0x02).\n"); }
-
-        reg = MPL3115A2_OUTPLSB;
-        i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true); 
-        bytes_read = i2c_read_blocking(i2c1, MPL3115A2_ADDR, &out_p_lsb, 1, false); 
-        if (bytes_read == PICO_ERROR_GENERIC) { printf("Error (pchg_handler_helper): Cannot read from MPL Pressure/Altimeter Output LSB (0x03).\n"); }
-
-        // convert from Q16.4
-        float altitude = ((out_p_msb << 24) | (out_p_csb << 16) | (out_p_lsb << 8)) / 65536.0;
-        printf("Altitude: %f m\n", altitude);
-        return altitude;
+    i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true);
+    printf("selecting int source register\n");
+    i2c_read_blocking(i2c1, MPL3115A2_ADDR, &int_source, 1, false); // this read clears the entire interrupt status reg 
+    if (int_source != 0x80) {
+        return 0; 
     }
+
+    // uint8_t out_t_msb; 
+    // uint8_t out_t_lsb; 
+
+    // reg = MPL3115A2_OUTTMSB;
+    // i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true); 
+    // bytes_read = i2c_read_blocking(i2c1, MPL3115A2_ADDR, &out_t_msb, 1, false); 
+    // printf("Read Pressure MSB\n");
+    // if (bytes_read == PICO_ERROR_GENERIC) { printf("Error (tchg_handler_helper): Cannot read from MPL Temperature Output MSB (0x04).\n"); }
     
+    // reg = MPL3115A2_OUTTLSB;
+    // i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true); 
+    // bytes_read = i2c_read_blocking(i2c1, MPL3115A2_ADDR, &out_t_lsb, 1, false); 
+    // printf("Read Pressure LSB\n");
+    // if (bytes_read == PICO_ERROR_GENERIC) { printf("Error (tchg_handler_helper): Cannot read from MPL Temperature Output CSB (0x05).\n"); }
+
+    // // convert from Q12.4
+    // float temperature = ((out_t_msb << 8) | out_t_lsb) / 256.0; 
+    // printf("Temperature: %f\u00B0C\n", temperature);
+
+    uint8_t out_p_msb; 
+    uint8_t out_p_csb; 
+    uint8_t out_p_lsb; 
+
+    uint8_t bytes_read;
+    
+    reg =  MPL3115A2_OUTPMSB;
+    i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true); 
+    bytes_read = i2c_read_blocking(i2c1, MPL3115A2_ADDR, &out_p_msb, 1, false); 
+    printf("read pressure msb\n");
+    if (bytes_read == PICO_ERROR_GENERIC) { printf("Error (pchg_handler_helper): Cannot read from MPL Pressure/Altimeter Output MSB (0x01).\n"); }
+    
+    reg = MPL3115A2_OUTPCSB; 
+    i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true); 
+    bytes_read = i2c_read_blocking(i2c1, MPL3115A2_ADDR, &out_p_csb, 1, false); 
+    printf("read pressure csb\n"); 
+    if (bytes_read == PICO_ERROR_GENERIC) { printf("Error (pchg_handler_helper): Cannot read from MPL Pressure/Altimeter Output CSB (0x02).\n"); }
+
+    reg = MPL3115A2_OUTPLSB;
+    i2c_write_blocking(i2c1, MPL3115A2_ADDR, &reg, 1, true); 
+    bytes_read = i2c_read_blocking(i2c1, MPL3115A2_ADDR, &out_p_lsb, 1, false); 
+    printf("read pressure lsb\n");
+    if (bytes_read == PICO_ERROR_GENERIC) { printf("Error (pchg_handler_helper): Cannot read from MPL Pressure/Altimeter Output LSB (0x03).\n"); }
+
+    // convert from Q16.4
+    float altitude = ((out_p_msb << 24) | (out_p_csb << 16) | (out_p_lsb << 8)) / 65536.0;
+    printf("Altitude: %f m\n", altitude);
+
+    return altitude;
 }
