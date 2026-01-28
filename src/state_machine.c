@@ -33,23 +33,8 @@ static inline int constrain(int target, int max, int min) {
     return target;
 }
 
-static inline int pitch_PID(float target_angle) {
-    float target_rate = (target_angle - orientation.angle_y) * PITCH_PGAIN;
-    return (int)((target_rate - orientation.gyro_y) * PITCH_RGAIN);
-}
+void PID(int* pitch, int* roll, int* yaw) {
 
-static inline int roll_PID(float target_angle) {
-    float target_rate = (target_angle - orientation.angle_z) * ROLL_PGAIN;
-    return (int)((target_rate - orientation.gyro_z) * ROLL_RGAIN);
-}
-
-static inline int yaw_PID(float target_angle) {
-    //implement this later its gonna be different because of the 0-360 degree mapping
-    return 0;
-}
-
-static inline int alt_PID(float target_alt) {
-    return THRUST_HOVER;
 }
 
 //pitch goes positive to move down the square, negative to move up
@@ -92,26 +77,22 @@ void calculate_altitude() {
     #endif
 }
 
+void parse_cmd(int* pt, int* rt, int* yt, int* at, int* cmd_dur, int* last_cmd) {
+
+}
 
 void motor_correct(float pitch_target, float roll_target, float yaw_target, float alt_target) {
     int pitch, roll, yaw, thrust;
     int fl, fr, bl, br;
 
     //PID calculations
-    pitch = pitch_PID(pitch_target);
-    roll = roll_PID(roll_target);
-    yaw = yaw_PID(yaw_target);
-    thrust = alt_PID(alt_target);
+    PID(&pitch, &roll, &yaw);
 
     //motor speed updates
-    fl = thrust - pitch + roll - yaw;
-    fr = thrust - pitch - roll + yaw;
-    bl = thrust + pitch + roll + yaw;
-    br = thrust + pitch - roll - yaw;
-    fl = constrain(fl, 999, 0);
-    fr = constrain(fr, 999, 0);
-    bl = constrain(bl, 999, 0);
-    br = constrain(br, 999, 0);
+    fl = constrain(thrust - pitch + roll - yaw, 999, 0);
+    fr = constrain(thrust - pitch - roll + yaw, 999, 0);
+    bl = constrain(thrust + pitch + roll + yaw, 999, 0);
+    br = constrain(thrust + pitch - roll - yaw, 999, 0);
     set_motors(fl,fr,bl,br);
 }
 
@@ -127,48 +108,7 @@ void state_machine(void) {
         yaw_target = 0;
         alt_target = THRUST_HOVER;
         if ((cmd_duration == 0) && cmd_fifo_pop(&cmd_buffer, &cmd)) {
-            switch(cmd) {
-                case 1: //go forward
-                    pitch_target += 15;
-                    cmd_duration = 10;
-                    last_cmd = 1;
-                    break;
-                case 2: //go backward
-                    pitch_target += -15;
-                    cmd_duration = 10;
-                    last_cmd = 2;
-                    break;
-                case 3: //bank left
-                    roll_target += -15;
-                    cmd_duration = 10;
-                    last_cmd = 3;
-                    break;
-                case 4: //bank right
-                    roll_target += 15;
-                    cmd_duration = 10;
-                    last_cmd = 4;
-                    break;
-                case 5: //clockwise turn
-                    yaw_target += 15;
-                    cmd_duration = 10;
-                    last_cmd = 5;
-                    break;
-                case 6: //counter-clockwise turn
-                    yaw_target += -15;
-                    cmd_duration = 10;
-                    last_cmd = 6;
-                    break;
-                case 7: //ascend
-                    alt_target += 25;
-                    cmd_duration = 10;
-                    last_cmd = 7;
-                    break;
-                case 8: //descend
-                    alt_target += -25;
-                    cmd_duration = 10;
-                    last_cmd = 8;
-                    break; 
-            }
+            parse_cmd(&pitch_target, &roll_target, &yaw_target, &alt_target, &cmd_duration, &last_cmd);  
         }
         if (imu_fifo_pop(&imu_buffer,&orientation) || tof_fifo_pop(&tof_buffer, &distance_meas)) {
             calculate_altitude();
