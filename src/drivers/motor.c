@@ -3,40 +3,27 @@
 #include "motor.h"
 #include "config.h"
 
-//slices are divided by front & back and channels by left & right
-#define PWM_FRONT_LEFT 32
-#define PWM_FRONT_RIGHT 33
-#define PWM_BACK_LEFT 34
-#define PWM_BACK_RIGHT 35
-
-#define SLICE_FRONT 8
-#define SLICE_BACK 9
-#define CHAN_LEFT 0
-#define CHAN_RIGHT 1
-
-#define PERIOD 1000
-
 void init_pwm_motor(void) {
     #ifdef LOG_MODE_0
         printf("Setting up PWM...\n\n");
     #endif
     
     //pin mux functions
-    gpio_set_function(PWM_FRONT_LEFT, GPIO_FUNC_PWM);
-    gpio_set_function(PWM_FRONT_RIGHT, GPIO_FUNC_PWM);
-    gpio_set_function(PWM_BACK_LEFT, GPIO_FUNC_PWM);
-    gpio_set_function(PWM_BACK_RIGHT, GPIO_FUNC_PWM);
+    gpio_set_function(PIN_MOTOR1, GPIO_FUNC_PWM);
+    gpio_set_function(PIN_MOTOR2, GPIO_FUNC_PWM);
+    gpio_set_function(PIN_MOTOR3, GPIO_FUNC_PWM);
+    gpio_set_function(PIN_MOTOR4, GPIO_FUNC_PWM);
 
     //slice setup 
-    pwm_hw->slice[SLICE_FRONT].div = 150 << 4; //1Khz counter
-    pwm_hw->slice[SLICE_FRONT].top = PERIOD-1; //wrap
+    pwm_hw->slice[SLICE_FRONT].div = 3 << 4; //50MHz tick speed
+    pwm_hw->slice[SLICE_FRONT].top = MOTOR_PWM_PERIOD-1; //wrap value of 20,000, combined with tick speed makes 1KHz frequency
     pwm_hw->slice[SLICE_FRONT].cc = 0; //default off
     pwm_hw->slice[SLICE_FRONT].csr = 0x1; //enable pwm
     
-    pwm_hw->slice[SLICE_BACK].div = 150 << 4; //1Khz counter
-    pwm_hw->slice[SLICE_BACK].top = PERIOD-1; //wrap
-    pwm_hw->slice[SLICE_BACK].cc = 0; //default off
-    pwm_hw->slice[SLICE_BACK].csr = 0x1; //enable pwm
+    pwm_hw->slice[SLICE_BACK].div = 3 << 4; 
+    pwm_hw->slice[SLICE_BACK].top = MOTOR_PWM_PERIOD-1; 
+    pwm_hw->slice[SLICE_BACK].cc = 0; 
+    pwm_hw->slice[SLICE_BACK].csr = 0x1; 
 
     #ifdef LOG_MODE_0
         printf("PWM Setup Complete\n\n");

@@ -5,9 +5,10 @@
 #include "pico/critical_section.h"
 #include "config.h"
 
-
+//buffer
 cmd_fifo_t cmd_buffer;
 
+//BUFFER INTERFACE
 static void fifo_push(cmd_fifo_t* fifo, uint8_t val) {
     if(fifo->count + 1 <= 64) {
         fifo->buffer[fifo->tail] = val; 
@@ -32,6 +33,7 @@ int cmd_fifo_pop(cmd_fifo_t* fifo, uint8_t* dest) {
     return 1; 
 }
 
+//RPZ INTERFACE
 void send_ack() {
     uart1_hw->dr = 0xff;
 }
@@ -40,7 +42,6 @@ void send_nack() {
     uart1_hw->dr = 0;
 }
 
-//push every command currently in the receive fifo into the cmd buffer
 void get_command() {
     critical_section_enter_blocking(&cmd_buffer.lock); 
 
@@ -58,12 +59,8 @@ void init_rpz() {
     #endif
 
     //pins
-    gpio_set_function(36, GPIO_FUNC_UART);
-    gpio_set_function(37, GPIO_FUNC_UART);
-
-    //internal uart peripheral
-    uart_init(uart1, 115200);
-    uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
+    gpio_set_function(PIN_RPZ_RX, GPIO_FUNC_UART);
+    gpio_set_function(PIN_RPZ_TX, GPIO_FUNC_UART);
 
     //buffer
     cmd_buffer.count = 0;

@@ -2,7 +2,14 @@
 #define TOF_H
 
 #include "pico/critical_section.h"
+#include "hardware/i2c.h"
 
+//CONSTANTS
+#define TOF_RANGING_FREQ_HZ 50
+#define GRID_CNT 16
+#define TOF_I2C_ADDR 0x29
+
+//TYPES
 typedef struct {
     uint16_t grid[16];
 } tof_measurement;
@@ -15,15 +22,21 @@ typedef struct {
     critical_section_t lock; 
 } tof_fifo_t; 
 
-//shared memory tof buffer
-extern tof_fifo_t tof_buffer;
-
+//PUBLIC API
 void init_tof();
+
+void start_polling_tof();
 
 void read_tof();
 
+int tof_fifo_pop(tof_fifo_t* fifo, tof_measurement* dest);
+
 void shutdown_tof();
 
-int tof_fifo_pop(tof_fifo_t* fifo, tof_measurement* dest);
+//PUBLIC DATA BUFFER
+extern tof_fifo_t tof_buffer;
+
+//SELECTED I2C BUS
+i2c_inst_t *tof_i2c = i2c0;
 
 #endif

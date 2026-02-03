@@ -7,13 +7,13 @@
 #include "tof/vl53l5cx_api.h"
 #include "config.h"
 
-#define I2C0_SDA 28
-#define I2C0_SCL 29
-
-VL53L5CX_Configuration tof_config;
-VL53L5CX_ResultsData data;
 tof_fifo_t tof_buffer;
 
+//GLOBALS FOR ToF API
+VL53L5CX_Configuration tof_config;
+VL53L5CX_ResultsData data;
+
+//BUFFER INTERFACE
 static void fifo_push(tof_fifo_t* fifo, tof_measurement val) { 
     if(fifo->count + 1 <= 64) {
         fifo->buffer[fifo->tail] = val; 
@@ -38,39 +38,62 @@ int tof_fifo_pop(tof_fifo_t* fifo, tof_measurement* dest) {
     return 1; 
 }
 
+
+//ToF INTERFACE
+void reset_tof() {
+    //ToF Reset Sequence (LPn low then high)
+    
+    gpio_put(PIN_TOF_LPN, false);
+    sleep_ms(10);
+    gpio_put(PIN_TOF_LPN, true);
+}
+
+//  Startup Sequence
+/*  1. Pin Setup
+    2. Reset
+    3. Flash Firmware
+    4. Set Ranging Frequency
+    5. Start Ranging Mode
+    6. Buffer Setup
+    7. Timer & Alarm Setup
+*/
 void init_tof() {
     #ifdef LOG_MODE_0
         printf("Starting ToF Boot Sequence\n");
     #endif
 
-    //I2C Peripheral
-    i2c_init(i2c0, 1000000);
-    gpio_set_function(I2C0_SCL,GPIO_FUNC_I2C);
-    gpio_set_function(I2C0_SDA,GPIO_FUNC_I2C);
+    //1.
+    gpio_init(PIN_TOF_LPN);
+    gpio_init(PIN_TOF_I2C_RST);
+    gpio_init(PIN_TOF_INT);
+    gpio_init(PIN_TOF_STATUS_LED);
 
-    //ToF Reset Sequence (LPn low then high)
-    gpio_init(25);
-    gpio_set_dir(25, true);
-    gpio_put(25, false);
-    sleep_ms(10);
-    gpio_put(25, true);
+    gpio_set_dir(PIN_TOF_LPN, true);
+    gpio_set_dir(PIN_TOF_I2C_RST, true);
+    gpio_set_dir(PIN_TOF_STATUS_LED,true);
 
-    //flash firmware and init
+    gpio_set_function(PIN_TOF_SCL,GPIO_FUNC_I2C);
+    gpio_set_function(PIN_TOF_SDA,GPIO_FUNC_I2C);
+    
+    //2.
+    reset_tof();
+
+    //3.
     vl53l5cx_init(&tof_config);
 
-    //set ranging frequency at 50hz
-    vl53l5cx_set_ranging_frequency_hz(&tof_config,60);
+    //4.
+    vl53l5cx_set_ranging_frequency_hz(&tof_config,TOF_RANGING_FREQ_HZ);
 
-    //enable ranging mode
+    //5.
     vl53l5cx_start_ranging(&tof_config);
 
-    //Buffer initialization
+    //6.
     tof_buffer.count = 0;
     tof_buffer.head = 0;
     tof_buffer.tail = 0;
     critical_section_init(&tof_buffer.lock);
 
-    //Timer & Alarm
+    //7.
     timer0_hw->inte |= 1 << 0;
     irq_set_exclusive_handler(TIMER0_IRQ_0, read_tof);
     irq_set_enabled(TIMER0_IRQ_0, true);
@@ -97,7 +120,7 @@ void read_tof() {
     //get distance measurement
     vl53l5cx_get_ranging_data(&tof_config,&data);
     
-    memcpy(meas.grid,data.distance_mm,sizeof(uint16_t)*16);
+    memcpy(meas.grid,data.distance_mm,sizeof(uint16_t)*GRID_CNT);
     fifo_push(&tof_buffer,meas);
 
     #ifdef LOG_MODE_0
@@ -116,7 +139,14 @@ void read_tof() {
     critical_section_exit(&tof_buffer.lock);
 }
 
+void start_polling_tof() {
+    timer0_hw->alarm[0] = timer0_hw->timerawl + (uint32_t) 20000; //set running
+
+    #ifdef LOG_MODE_0
+        printf("Core 0 ToF Polling started...\n");
+    #endif
+}
+
 void shutdown_tof() {
-    //stop ranging mode
     vl53l5cx_stop_ranging(&tof_config);
 }
