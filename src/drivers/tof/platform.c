@@ -12,8 +12,9 @@
 
 #include "tof/platform.h"
 #include "hardware/i2c.h"
-#include "config.h"
 #include "tof/tof.h"
+
+i2c_inst_t *i2c_bus = i2c0;
 
 uint8_t VL53L5CX_RdByte(
 		VL53L5CX_Platform *p_platform,
@@ -25,8 +26,8 @@ uint8_t VL53L5CX_RdByte(
 	int result;
 	uint8_t temp[2] = {RegisterAdress >> 8, RegisterAdress & 0xff};
 	
-	i2c_write_blocking(tof_i2c, TOF_I2C_ADDR, temp, 2, true);
-	result = i2c_read_blocking(tof_i2c,TOF_I2C_ADDR,p_value,1,false);
+	i2c_write_blocking(i2c_bus, TOF_I2C_ADDR, temp, 2, true);
+	result = i2c_read_blocking(i2c_bus,TOF_I2C_ADDR,p_value,1,false);
 
 	if (result == 1) {
         status = 0;
@@ -45,7 +46,7 @@ uint8_t VL53L5CX_WrByte(
 	int result;
 	uint8_t temp[3] = {RegisterAdress >> 8, RegisterAdress & 0xff, value};
 
-	result = i2c_write_blocking(tof_i2c, TOF_I2C_ADDR, temp, 3, false);
+	result = i2c_write_blocking(i2c_bus, TOF_I2C_ADDR, temp, 3, false);
 	if (result == 3) {
         status = 0;
 	}
@@ -62,24 +63,24 @@ uint8_t VL53L5CX_WrMulti(
 	uint8_t status = 255;
 	
 	//set i2c_addr
-	tof_i2c->hw->enable = 0;
-    tof_i2c->hw->tar = TOF_I2C_ADDR;
-    tof_i2c->hw->enable = 1;
+	i2c_bus->hw->enable = 0;
+    i2c_bus->hw->tar = TOF_I2C_ADDR;
+    i2c_bus->hw->enable = 1;
 
 	//send register address
 	for (int i=8; i >= 0; i-=8) {
-		tof_i2c->hw->data_cmd = (RegisterAdress >> i) & 0xff;
+		i2c_bus->hw->data_cmd = (RegisterAdress >> i) & 0xff;
 		//wait for send before sending again
-		while (!(tof_i2c->hw->raw_intr_stat & I2C_IC_RAW_INTR_STAT_TX_EMPTY_BITS)) {
+		while (!(i2c_bus->hw->raw_intr_stat & I2C_IC_RAW_INTR_STAT_TX_EMPTY_BITS)) {
 			tight_loop_contents();
 		}
 	}
 
 	//send data bytes, with stop flag on last byte
 	for (uint32_t i = 0; i < size; i++) {
-		tof_i2c->hw->data_cmd = bool_to_bit(i == (uint32_t)size-1) << I2C_IC_DATA_CMD_STOP_LSB | p_values[i];
+		i2c_bus->hw->data_cmd = bool_to_bit(i == (uint32_t)size-1) << I2C_IC_DATA_CMD_STOP_LSB | p_values[i];
 		//wait for send before sending again
-		while (!(tof_i2c->hw->raw_intr_stat & I2C_IC_RAW_INTR_STAT_TX_EMPTY_BITS)) {
+		while (!(i2c_bus->hw->raw_intr_stat & I2C_IC_RAW_INTR_STAT_TX_EMPTY_BITS)) {
 			tight_loop_contents();
 		}
 	}
@@ -98,8 +99,8 @@ uint8_t VL53L5CX_RdMulti(
 	
 	uint8_t temp[2] = {RegisterAdress >> 8, RegisterAdress & 0xff};
 
-	i2c_write_blocking(tof_i2c,TOF_I2C_ADDR,temp,2,true);
-	i2c_read_blocking(tof_i2c,TOF_I2C_ADDR,p_values,size,false);
+	i2c_write_blocking(i2c_bus,TOF_I2C_ADDR,temp,2,true);
+	i2c_read_blocking(i2c_bus,TOF_I2C_ADDR,p_values,size,false);
 
 	status = 0;
 	

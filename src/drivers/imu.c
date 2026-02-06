@@ -12,6 +12,9 @@
 //Public IMU Data Buffer
 imu_fifo_t imu_buffer;
 
+//SELECTED I2C BUS
+i2c_inst_t *imu_i2c = i2c1; 
+
 
 //FLASH INTERFACE
 void __no_inline_not_in_flash_func(get_calib_data)(uint8_t* buffer) {
@@ -123,9 +126,9 @@ void reset_imu() {
     sleep_ms(50);
 
     //Reset Loop
-    int method = 0;
+    int method = 1;
 
-    while (true) { //NEEDS A TIMEOUT BEFORE FLIGHT TESTING, most likely watchdog in case it hangs in an i2c transaction 
+    while (true) { 
         #ifdef LOG_MODE_0
             printf("Attempting reset with method %d\n", method);
         #endif
@@ -150,8 +153,8 @@ void reset_imu() {
 
         //read opr_mode status
         internal_reg_addr = OPR_MODE_ADDR;
-        i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
-        i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,&temp,1,false);
+        i2c_write_blocking_until(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, true,1000000);
+        i2c_read_blocking_until(imu_i2c,IMU_I2C_ADDR,&temp,1,false,1000000);
 
         #ifdef LOG_MODE_0
             printf("Operation Mode: %x\n", temp & 0xf);
@@ -208,7 +211,7 @@ void init_imu() {
     gpio_set_dir(PIN_IMU_ADR, true);
     gpio_set_dir(PIN_IMU_PS0, true);
     gpio_set_dir(PIN_IMU_PS1, true);
-    gpio_set_dit(PIN_IMU_STATUS_LED,true);
+    gpio_set_dir(PIN_IMU_STATUS_LED,true);
 
     #ifdef LOG_MODE_0
         printf("Starting IMU Reset Sequence\n");
@@ -244,7 +247,8 @@ void init_imu() {
             printf("Calibration Status (System, Gyro, Accel, Magnet) %x %x %x %x\n",(flash_buffer[0] & 0xc0) >> 6,(flash_buffer[0] & 0x30) >> 4,(flash_buffer[0] & 0x0c) >> 2,(flash_buffer[0] & 0x03));
         #endif
 
-        sleep_ms(2000);
+        sleep_ms(500);
+
     } while (flash_buffer[0] != 0xff);
 
     //6.

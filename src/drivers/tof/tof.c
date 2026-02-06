@@ -8,6 +8,7 @@
 #include "config.h"
 
 tof_fifo_t tof_buffer;
+i2c_inst_t *tof_i2c = i2c0;
 
 //GLOBALS FOR ToF API
 VL53L5CX_Configuration tof_config;

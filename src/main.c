@@ -9,10 +9,6 @@
 #include "altimeter.h"
 #include "config.h"
 
-void comms_setup() {
-    
-}
-
 int main() {
     //UART INIT FOR LOGGING
     stdio_init_all();
@@ -21,8 +17,8 @@ int main() {
     i2c_init(i2c1, 400000); //400 KHz: i2c fast mode
     i2c_init(i2c0, 1000000); //1MHz: i2c fast mode +
     //SPI setup for drift cam will go here
-    uart_init(uart1, 115200); //standard baud rate
-    uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
+    //uart_init(uart1, 115200); //standard UART baud rate
+    //uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
 
     //SENSOR BOOT
     #ifdef LOG_MODE_0
@@ -31,11 +27,12 @@ int main() {
     init_imu();
     init_tof();
     init_rpz();
-    init_pwm_motor();
+    //init_pwm_motor();
+    init_altimeter();
 
     //polling start
-    start_polling_imu();
-    start_polling_tof();
+    //start_polling_imu();
+    //start_polling_tof();
     start_polling_altimeter();
 
     //launch second core

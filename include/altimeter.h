@@ -6,44 +6,39 @@
 #include "hardware/i2c.h"
 #include "pico/critical_section.h"
 
-// ports that the MPL3115A is connected to on the MCU 
-#define ALT_INT1 28
-#define ALT_INT2 25
-#define I2C_SDA 22
-#define I2C_SCL 27
-#define I2C_FAST_MODE 400000
+//CONSTANTS
+#define ALT_I2C_ADDR 0x60 // 7-bit slave address 
 
-#define MPL3115A2_ADDR 0x60 // 7-bit slave address 
+#define ALT_STATUS 0x00
+#define ALT_OUT_P_MSB 0X01
+#define ALT_OUT_P_CSB 0x02
+#define ALT_OUT_P_LSB 0x03 
+#define ALT_OUT_T_MSB 0x04 
+#define ALT_OUT_T_LSB 0X05   
 
-#define MPL3115A2_STATUS 0x00
-#define MPL3115A2_OUTPMSB 0X01
-#define MPL3115A2_OUTPCSB 0x02
-#define MPL3115A2_OUTPLSB 0x03 
-#define MPL3115A2_OUTTMSB 0x04 
-#define MPL3115A2_OUTTLSB 0X05   
+#define ALT_WHOAMI 0x0c // who am i register
+#define ALT_CTRLREG1 0x26
+#define ALT_CTRLREG2 0x27
+#define ALT_CTRLREG3 0x28
+#define ALT_CTRLREG4 0x29
+#define ALT_INTSOURCE 0x12
+#define ALT_PTDATACFG 0x13
 
-#define MPL3115A2_WHOAMI 0x0c // who am i register
-#define MPL3115A2_CTRLREG1 0x26
-#define MPL3115A2_CTRLREG2 0x27
-#define MPL3115A2_CTRLREG3 0x28
-#define MPL3115A2_CTRLREG4 0x29
-#define MPL3115A2_INTSOURCE 0x12
-#define MPL3115A2_PTDATACFG 0x13
-
+#define ALT_OST 1
+#define ALT_OS0 3
+#define ALT_OS2 5
+#define ALT_MODE_ALT 7
 
 // Altimeter Buffer Type 
 typedef struct {
-    volatile buffer[64];
+    volatile float buffer[64];
     volatile int count; 
     volatile int head; 
     volatile int tail; 
     critical_section_t lock; 
-} altimeter_fifo_t; 
+} alt_fifo_t; 
 
-extern altimeter_fifo_t altimeter_buffer;   
-
-/*! \brief Initialize GPIO pins and interrupts for the MPL3115A */
-void init_altimeter_pins(); 
+extern alt_fifo_t alt_buffer;
 
 /*! \brief Configure the Altimeter as One Shot Mode*/
 void init_altimeter(); 
@@ -51,22 +46,8 @@ void init_altimeter();
 /*! \brief Read data*/
 void read_altimeter(); 
 
-void toggle_one_shot(); 
+int alt_fifo_pop(alt_fifo_t* fifo, float* dest);
 
-/*! \brief Catch all handler for interrupts g   enerated on INT1 and INT2 */
-float altimeter_handler();
-
-
-/* Ignore the bottom functions for now may be used for later.*/
-
-/*! \brief Initialize the barometric altimeter to detect temperature and pressure changes on INT1 and INT2 pins, respectively */
-void temp_pressure_int_setup();
-
-
-/*! \brief Temperature Change interrupt handler */
-void tchg_handler_helper();
-
-/*! \brief Pressure/Altimeter Change interrupt handler */
-void pchg_handler_helper();
+void start_polling_altimeter();
 
 #endif

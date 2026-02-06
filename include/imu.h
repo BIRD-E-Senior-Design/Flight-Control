@@ -74,8 +74,4 @@ void reset_imu();
 
 //IMU DATA BUFFER
 extern imu_fifo_t imu_buffer;
-
-//SELECTED I2C BUS
-i2c_inst_t *imu_i2c = i2c1; 
-
 #endif

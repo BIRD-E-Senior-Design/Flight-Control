@@ -36,7 +36,4 @@ void shutdown_tof();
 //PUBLIC DATA BUFFER
 extern tof_fifo_t tof_buffer;
 
-//SELECTED I2C BUS
-i2c_inst_t *tof_i2c = i2c0;
-
 #endif

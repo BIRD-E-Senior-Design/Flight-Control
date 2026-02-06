@@ -6,6 +6,7 @@
 #include "imu.h"
 #include "tof/tof.h"
 #include "rpz.h"
+#include "altimeter.h"
 #include "config.h"
 
 
@@ -17,6 +18,7 @@ imu_measurement orientation;
 tof_measurement distance_meas;
 uint16_t altitude;
 uint8_t cmd;
+float alt_baro;
 
 //PID
 void PID(int* pitch, int* roll, int* yaw, int* thrust) {
@@ -91,11 +93,12 @@ void state_machine(void) {
         roll_target = 0;
         yaw_target = 0;
         alt_target = THRUST_HOVER;
-        if (cmd_fifo_pop(&cmd_buffer, &cmd)) {
-            parse_cmd(&pitch_target, &roll_target, &yaw_target, &alt_target);  
-        }
-        if (fifo_pop_imu(&imu_buffer,&orientation) || tof_fifo_pop(&tof_buffer, &distance_meas)) {
-            motor_correct(pitch_target, roll_target, yaw_target, alt_target);
+        // if (cmd_fifo_pop(&cmd_buffer, &cmd)) {
+        //     parse_cmd(&pitch_target, &roll_target, &yaw_target, &alt_target);  
+        // }
+        if (/*fifo_pop_imu(&imu_buffer,&orientation) | tof_fifo_pop(&tof_buffer, &distance_meas) |*/ alt_fifo_pop(&alt_buffer,&alt_baro)) {
+            printf(">Altitude: %f\n", alt_baro);
+            //motor_correct(pitch_target, roll_target, yaw_target, alt_target);
         }
     }
 }
