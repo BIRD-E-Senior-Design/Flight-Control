@@ -7,6 +7,7 @@
 #include "rpz.h"
 #include "flight.h"
 #include "altimeter.h"
+#include "flow.h"
 #include "config.h"
 
 int main() {
@@ -14,33 +15,39 @@ int main() {
     stdio_init_all();
 
     //COMMS SETUP
-    i2c_init(i2c1, 400000); //400 KHz: i2c fast mode
-    i2c_init(i2c0, 1000000); //1MHz: i2c fast mode +
-    gpio_set_function(PIN_I2C1_SDA, GPIO_FUNC_I2C);
-    gpio_set_function(PIN_I2C1_SCL, GPIO_FUNC_I2C);
-    gpio_set_function(PIN_I2C0_SCL, GPIO_FUNC_I2C);
-    gpio_set_function(PIN_I2C0_SDA, GPIO_FUNC_I2C);
-    //SPI setup for drift cam will go here
-    uart_init(uart1, 115200); //standard UART baud rate
-    uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
+    //i2c_init(i2c1, 400000); //400 KHz: i2c fast mode
+    //i2c_init(i2c0, 1000000); //1MHz: i2c fast mode +
+    //gpio_set_function(PIN_I2C1_SDA, GPIO_FUNC_I2C);
+    //gpio_set_function(PIN_I2C1_SCL, GPIO_FUNC_I2C);
+    //gpio_set_function(PIN_I2C0_SCL, GPIO_FUNC_I2C);
+    //gpio_set_function(PIN_I2C0_SDA, GPIO_FUNC_I2C);
+    
+    spi_init(spi1,2000000); 
+    gpio_set_function(PIN_DRIFT_TX, GPIO_FUNC_SPI);
+    gpio_set_function(PIN_DRIFT_RX, GPIO_FUNC_SPI);
+    gpio_set_function(PIN_DRIFT_CSN, GPIO_FUNC_SPI);
+    gpio_set_function(PIN_DRIFT_SCLK, GPIO_FUNC_SPI);
+
+    //uart_init(uart1, 115200); //standard UART baud rate
+    //uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
 
     //SENSOR BOOT
     #ifdef LOG_MODE_0
         printf("SENSOR BOOT...\n\n");
     #endif
-    init_imu();
-    init_tof();
-    init_rpz();
-    init_altimeter();
-    init_pwm_motor();
+    //init_imu();
+    //init_tof();
+    //init_rpz();
+    //init_altimeter();
+    //init_pwm_motor();
 
     //polling start
-    start_polling_imu();
-    start_polling_tof();
-    start_polling_altimeter();
+    //start_polling_imu();
+    //start_polling_tof();
+    //start_polling_altimeter();
 
     //launch second core
-    multicore_launch_core1(state_machine);
+    //multicore_launch_core1(state_machine);
 
     //infinite loop
     for (;;) {
