@@ -35,6 +35,17 @@ int tof_fifo_pop(tof_fifo_t* fifo, tof_measurement* dest) {
     *dest = fifo->buffer[fifo->head];
     fifo->head = (fifo->head + 1) % 64;
 
+    // #ifdef LOG_MODE_1
+    //     printf("Distance Grid:\n");
+    //     for (int i = 0; i < 4; i++) {
+    //         for (int j = 0; j < 4; j++) {
+    //             printf("%d ", dest->grid[i*4 + j]);
+    //         }
+    //         printf("\n");
+    //     }
+    //     printf("\n\n");
+    // #endif
+
     critical_section_exit(&fifo->lock);
     return 1; 
 }
@@ -72,9 +83,6 @@ void init_tof() {
     gpio_set_dir(PIN_TOF_LPN, true);
     gpio_set_dir(PIN_TOF_I2C_RST, true);
     gpio_set_dir(PIN_TOF_STATUS_LED,true);
-
-    gpio_set_function(PIN_TOF_SCL,GPIO_FUNC_I2C);
-    gpio_set_function(PIN_TOF_SDA,GPIO_FUNC_I2C);
     
     //2.
     reset_tof();
@@ -123,17 +131,6 @@ void read_tof() {
     
     memcpy(meas.grid,data.distance_mm,sizeof(uint16_t)*GRID_CNT);
     fifo_push(&tof_buffer,meas);
-
-    #ifdef LOG_MODE_0
-        printf("Distance Grid:\n");
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 4; j++) {
-                printf("%d ", meas.grid[i*4 + j]);
-            }
-            printf("\n");
-        }
-        printf("\n\n");
-    #endif
 
     timer0_hw->alarm[0] = time + (uint32_t) 20000; //reset alarm
 

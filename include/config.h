@@ -3,29 +3,28 @@
 
 //  LOGGING
     #define LOG_MODE_0
-    //#define LOG_MODE_1
+    #define LOG_MODE_1
 
 //  PINS
+    #define PIN_I2C1_SDA 30 //I2C Buses
+    #define PIN_I2C1_SCL 31
+    #define PIN_I2C0_SDA 28
+    #define PIN_I2C0_SCL 29
+
     #define PIN_IMU_HARD_RESET 22 //IMU
     #define PIN_IMU_RESET 23
     #define PIN_IMU_INT 26
     #define PIN_IMU_ADR 17
     #define PIN_IMU_PS0 2
     #define PIN_IMU_PS1 3
-    #define PIN_IMU_SDA 30
-    #define PIN_IMU_SCL 31
     #define PIN_IMU_STATUS_LED 9
 
-    #define PIN_TOF_SDA 28 //ToF
-    #define PIN_TOF_SCL 29
-    #define PIN_TOF_I2C_RST 24
+    #define PIN_TOF_I2C_RST 24 //ToF
     #define PIN_TOF_LPN 25
     #define PIN_TOF_INT 27
     #define PIN_TOF_STATUS_LED 8
 
-    #define PIN_ALT_SDA 18 //Altimeter
-    #define PIN_ALT_SCL 19
-    #define PIN_ALT_INT1 20
+    #define PIN_ALT_INT1 20 //Altimeter
     #define PIN_ALT_INT2 21
     #define PIN_ALT_STATUS_LED 11
 

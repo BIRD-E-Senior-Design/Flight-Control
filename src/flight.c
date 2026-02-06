@@ -61,8 +61,18 @@ void calculate_altitude() {
     altitude = distance_meas.grid[pitch_nadir + roll_nadir];
 
     #ifdef LOG_MODE_1
+        printf(">Euler X: %f\n", orientation.angle_x);
+        printf(">Euler Y: %f\n", orientation.angle_y);
+        printf(">Euler Z: %f\n", orientation.angle_z);
+        printf(">Gyro X: %f\n", orientation.gyro_x);
+        printf(">Gyro Y: %f\n", orientation.gyro_y);
+        printf(">Gyro Z: %f\n", orientation.gyro_z);
+        printf(">Accel X: %f\n", orientation.acc_x);
+        printf(">Accel Y: %f\n", orientation.acc_y);
+        printf(">Accel Z: %f\n", orientation.acc_z);
         printf(">Nadir: %d\n", pitch_nadir + roll_nadir);
-        printf(">Altitude: %d\n", altitude);
+        printf(">ToF Altitude: %d\n", altitude);
+        printf(">Altitude: %f\n", alt_baro);
     #endif
 }
 
@@ -74,6 +84,7 @@ void motor_correct(float pitch_target, float roll_target, float yaw_target, floa
     int pitch, roll, yaw, thrust;
     int fl, fr, bl, br;
     //PID calculations
+    calculate_altitude();
     PID(&pitch, &roll, &yaw, &thrust);
 
     //motor speed updates
@@ -93,12 +104,11 @@ void state_machine(void) {
         roll_target = 0;
         yaw_target = 0;
         alt_target = THRUST_HOVER;
-        // if (cmd_fifo_pop(&cmd_buffer, &cmd)) {
-        //     parse_cmd(&pitch_target, &roll_target, &yaw_target, &alt_target);  
-        // }
-        if (/*fifo_pop_imu(&imu_buffer,&orientation) | tof_fifo_pop(&tof_buffer, &distance_meas) |*/ alt_fifo_pop(&alt_buffer,&alt_baro)) {
-            printf(">Altitude: %f\n", alt_baro);
-            //motor_correct(pitch_target, roll_target, yaw_target, alt_target);
+        if (cmd_fifo_pop(&cmd_buffer, &cmd)) {
+            parse_cmd(&pitch_target, &roll_target, &yaw_target, &alt_target);  
+        }
+        if (fifo_pop_imu(&imu_buffer,&orientation) | tof_fifo_pop(&tof_buffer, &distance_meas) | alt_fifo_pop(&alt_buffer,&alt_baro)) {
+            motor_correct(pitch_target, roll_target, yaw_target, alt_target);
         }
     }
 }

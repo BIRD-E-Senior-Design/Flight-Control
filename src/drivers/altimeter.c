@@ -61,7 +61,6 @@ void read_altimeter() {
     float altitude = ((data[0] << 24) | (data[1] << 16) | (data[2] << 8)) / 65536.0;
 
     fifo_push(&alt_buffer,altitude);
-    printf(">Altitude: %f\n", altitude);
 
     timer0_hw->alarm[2] = timer0_hw->timerawl + (uint32_t) 200000;
 
@@ -73,19 +72,9 @@ void init_altimeter() {
     uint8_t config[2]; // {register, data}
     uint8_t data;
 
-    // Initiallize the pins that the interrupt pins are connected to
-    //gpio_init(PIN_ALT_INT1);
-    //gpio_init(PIN_ALT_INT2);
-    
-    // Set up I2C pins on master
-    //gpio_set_function(PIN_ALT_SCL, GPIO_FUNC_I2C);  
-    //gpio_set_function(PIN_ALT_SDA, GPIO_FUNC_I2C); 
-    //gpio_pull_up(PIN_ALT_SCL); 
-    //gpio_pull_up(PIN_ALT_SDA);
-
-    reg = ALT_WHOAMI;    
-    i2c_write_blocking(i2c1, ALT_I2C_ADDR, &reg, 1, true);
-    i2c_read_blocking(i2c1, ALT_I2C_ADDR, &data, 1, false);
+    // reg = ALT_WHOAMI;    
+    // i2c_write_blocking(i2c1, ALT_I2C_ADDR, &reg, 1, true);
+    // i2c_read_blocking(i2c1, ALT_I2C_ADDR, &data, 1, false);
 
     // set standby altimeter mode with OSR of 32, 130ms min DR
     config[0] = ALT_CTRLREG1; 
