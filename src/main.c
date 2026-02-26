@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
-#include "tof/tof.h"
-#include "imu.h"
-#include "motor.h"
-#include "rpz.h"
-#include "flight.h"
-#include "altimeter.h"
-#include "flow.h"
+#include "sensors/tof/tof.h"
+#include "sensors/imu.h"
+#include "sensors/rpz.h"
+#include "sensors/altimeter.h"
+#include "sensors/flow.h"
+#include "control/motors.h"
+#include "control/state_machine.h"
 #include "config.h"
 
 int main() {
@@ -23,6 +23,7 @@ int main() {
     //gpio_set_function(PIN_I2C0_SDA, GPIO_FUNC_I2C);
     
     spi_init(spi1,2000000); 
+    spi_set_format(spi1,16,0,0,SPI_MSB_FIRST);
     gpio_set_function(PIN_DRIFT_TX, GPIO_FUNC_SPI);
     gpio_set_function(PIN_DRIFT_RX, GPIO_FUNC_SPI);
     gpio_set_function(PIN_DRIFT_CSN, GPIO_FUNC_SPI);
@@ -39,6 +40,7 @@ int main() {
     //init_tof();
     //init_rpz();
     //init_altimeter();
+    init_flow();
     //init_pwm_motor();
 
     //polling start
@@ -47,7 +49,7 @@ int main() {
     //start_polling_altimeter();
 
     //launch second core
-    //multicore_launch_core1(state_machine);
+    //multicore_launch_core1(flight_control);
 
     //infinite loop
     for (;;) {

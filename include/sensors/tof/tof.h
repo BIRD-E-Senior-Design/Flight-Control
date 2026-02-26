@@ -3,24 +3,12 @@
 
 #include "pico/critical_section.h"
 #include "hardware/i2c.h"
+#include "types.h"
 
 //CONSTANTS
 #define TOF_RANGING_FREQ_HZ 50
 #define GRID_CNT 16
 #define TOF_I2C_ADDR 0x29
-
-//TYPES
-typedef struct {
-    uint16_t grid[16];
-} tof_measurement;
-
-typedef struct {
-    volatile tof_measurement buffer[64];
-    volatile int count; 
-    volatile int head; 
-    volatile int tail; 
-    critical_section_t lock; 
-} tof_fifo_t; 
 
 //PUBLIC API
 void init_tof();

@@ -2,15 +2,7 @@
 #define RPZ_H
 
 #include "pico/critical_section.h"
-
-//TYPES
-typedef struct {
-    volatile uint8_t buffer[64];
-    volatile int count; 
-    volatile int head; 
-    volatile int tail; 
-    critical_section_t lock; 
-} cmd_fifo_t; 
+#include "types.h"
 
 //PUBLIC API
 void send_ack();

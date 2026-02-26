@@ -9,10 +9,9 @@
   *
   ******************************************************************************
   */
-
-#include "tof/platform.h"
 #include "hardware/i2c.h"
-#include "tof/tof.h"
+#include "sensors/tof/platform.h"
+#include "sensors/tof/tof.h"
 
 i2c_inst_t *i2c_bus = i2c0;
 

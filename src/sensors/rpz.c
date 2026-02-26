@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "rpz.h"
+#include "sensors/rpz.h"
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
 #include "pico/critical_section.h"

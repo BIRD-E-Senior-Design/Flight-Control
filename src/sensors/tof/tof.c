@@ -2,9 +2,9 @@
 #include "pico/stdlib.h"
 #include "pico/critical_section.h"
 #include "hardware/i2c.h"
-#include "tof/tof.h"
-#include "tof/platform.h"
-#include "tof/vl53l5cx_api.h"
+#include "sensors/tof/tof.h"
+#include "sensors/tof/platform.h"
+#include "sensors/tof/vl53l5cx_api.h"
 #include "config.h"
 
 tof_fifo_t tof_buffer;

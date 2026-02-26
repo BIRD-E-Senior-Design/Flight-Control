@@ -6,15 +6,35 @@
 #include "hardware/timer.h"
 #include "hardware/flash.h"
 #include "hardware/sync.h"
-#include "imu.h"
+#include "sensors/imu.h"
 #include "config.h"
+
+//CONSTANTS
+#define IMU_I2C_ADDR 0x29 //(0101001b)
+
+#define EULER_ADDR 0x1A //Internal Register Addresses
+#define GYRO_ADDR 0x14
+#define ACC_ADDR 0x08
+#define SYS_TRIG_ADDR 0x3F
+#define OPR_MODE_ADDR 0x3D
+#define CALIB_STAT_ADDR 0x35
+#define ACC_OFFSET_ADDR 0x55
+
+#define NDOF_MODE 0x0C //Operation Modes
+#define CONFIG_MODE 0x00
+
+#define RST_SYS 0x20 //Software Reset Value
+
+#define CALIB_FLASH_OFFSET 0x00fff000u //Calibration & Flash
+#define CALIB_FLASH_ADDRESS (XIP_BASE + CALIB_FLASH_OFFSET)
+#define CALIB_DATA_BYTES 22
+#define MIN_FLASH_OP_BYTES 256
 
 //Public IMU Data Buffer
 imu_fifo_t imu_buffer;
 
 //SELECTED I2C BUS
 i2c_inst_t *imu_i2c = i2c1; 
-
 
 //FLASH INTERFACE
 void __no_inline_not_in_flash_func(get_calib_data)(uint8_t* buffer) {
