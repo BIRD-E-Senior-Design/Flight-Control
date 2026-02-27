@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "pico/stdlib.h"
-#include "pico/critical_section.h"
+#include "pico/mutex.h"
 #include "hardware/i2c.h"
 #include "hardware/timer.h"
 #include "hardware/flash.h"
@@ -22,6 +22,8 @@
 
 #define NDOF_MODE 0x0C //Operation Modes
 #define CONFIG_MODE 0x00
+#define ACCGYRO_MODE 0x05
+#define AMG_MODE 0x07
 
 #define RST_SYS 0x20 //Software Reset Value
 
@@ -30,8 +32,10 @@
 #define CALIB_DATA_BYTES 22
 #define MIN_FLASH_OP_BYTES 256
 
-//Public IMU Data Buffer
+//Exported Vars
 imu_fifo_t imu_buffer;
+imu_measurement orientation_local;
+bool imu_data_ready = false;
 
 //SELECTED I2C BUS
 i2c_inst_t *imu_i2c = i2c1; 
@@ -56,82 +60,72 @@ void __no_inline_not_in_flash_func(save_calib_data)(uint8_t* buffer) {
 
 
 //BUFFER INTERFACE
-static void fifo_push(imu_fifo_t* fifo, imu_measurement val) {
-    if(fifo->count + 1 <= 64) {
-        fifo->buffer[fifo->tail] = val; 
-        fifo->tail = (fifo->tail + 1) % 64;
-        fifo->count++; 
+bool fifo_push_imu(imu_fifo_t* fifo, imu_measurement val) {
+    int next_tail = (fifo->tail + 1) & 7;
+
+    //mutex_enter_blocking(&fifo->lock);
+    if ((void*)next_tail == fifo->buffer) {
+        //mutex_exit(&fifo->lock);
+        return false;
     }
+    fifo->buffer[fifo->tail] = val; 
+    fifo->tail = next_tail;
+    //mutex_exit(&fifo->lock);
+    //this means buffer is full and math has stopped running, bad
+    return true;
 }
 
-int fifo_pop_imu(imu_fifo_t* fifo, imu_measurement* dest) {
-    critical_section_enter_blocking(&fifo->lock); 
-    
-    if(!fifo->count) {
-        critical_section_exit(&fifo->lock); 
-        return 0;
+bool fifo_pop_imu(imu_fifo_t* fifo, imu_measurement* dest) {
+    //mutex_enter_blocking(&fifo->lock);
+    if(fifo->head == fifo->tail) {
+        //mutex_exit(&fifo->lock);
+        return false;
     }
-
     *dest = fifo->buffer[fifo->head];
-    fifo->count--;
-    fifo->head = (fifo->head + 1) % 64;
-
-    critical_section_exit(&fifo->lock); 
-    return 1; 
+    fifo->head = (fifo->head + 1) & 7;
+    //mutex_exit(&fifo->lock);
+    //buffer is empty, not so bad
+    return true; 
 }
 
+//TIMER INTR
+void imu_isr() {
+    hw_clear_bits(&timer0_hw->intr, 1 << 1); //ack interrupt
+    imu_data_ready = true; //set flag for main loop
+    timer0_hw->alarm[1] = timer0_hw->timerawl + (uint32_t) 11000; //reset alarm
+}
+
+void start_polling_imu() {
+    timer0_hw->alarm[1] = timer0_hw->timerawl + (uint32_t) 10000;
+
+    #ifdef LOG_MODE_0
+        printf("Core 0 IMU Polling started...\n");
+    #endif
+}
 
 //IMU INTERFACE
 void read_imu() {
-    uint8_t temp[6];
+    uint8_t temp[12];
     uint8_t internal_reg_addr;
-    imu_measurement data_point;
-    uint32_t time = timer0_hw->timerawl;
 
-    critical_section_enter_blocking(&imu_buffer.lock);
-
-    hw_clear_bits(&timer0_hw->intr, 1 << 1); //ack interrupt
-
-    //EULER ANGLE DATA
-    internal_reg_addr = EULER_ADDR; 
-    i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, true); 
-    i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,temp,6,false); 
-    data_point.angle_x = ((int16_t)((temp[1]<<8) | temp[0])) / 16.0;
-    data_point.angle_y = ((int16_t)((temp[3]<<8) | temp[2])) / 16.0;
-    data_point.angle_z = ((int16_t)((temp[5]<<8) | temp[4])) / 16.0;
-
-    //GYROSCOPE DATA
+    //GYROSCOPE & EULER ANGLE DATA
     internal_reg_addr = GYRO_ADDR;
     i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
-    i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,temp,6,false); 
-    data_point.gyro_x = ((int16_t)((temp[1]<<8) | temp[0])) / 16.0;
-    data_point.gyro_y = ((int16_t)((temp[3]<<8) | temp[2])) / 16.0;
-    data_point.gyro_z = ((int16_t)((temp[5]<<8) | temp[4])) / 16.0;
+    i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,temp,12,false); 
+    orientation_local.gyro_x = ((int16_t)((temp[1]<<8) | temp[0])) / 16.0;
+    orientation_local.gyro_y = ((int16_t)((temp[3]<<8) | temp[2])) / 16.0;
+    orientation_local.gyro_z = ((int16_t)((temp[5]<<8) | temp[4])) / 16.0;
+    orientation_local.angle_x = ((int16_t)((temp[7]<<8) | temp[6])) / 16.0;
+    orientation_local.angle_y = ((int16_t)((temp[9]<<8) | temp[8])) / 16.0;
+    orientation_local.angle_z = ((int16_t)((temp[11]<<8) | temp[10])) / 16.0;
 
     //ACCELEROMETER DATA
     internal_reg_addr = ACC_ADDR;
     i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
     i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,temp,6,false);
-    data_point.acc_x = ((int16_t)((temp[1]<<8) | temp[0])) / 100.0;
-    data_point.acc_y = ((int16_t)((temp[3]<<8) | temp[2])) / 100.0;
-    data_point.acc_z = ((int16_t)((temp[5]<<8) | temp[4])) / 100.0;
-
-    fifo_push(&imu_buffer,data_point);
-    timer0_hw->alarm[1] = time + (uint32_t) 10000; //reset alarm
-
-    // #ifdef LOG_MODE_1
-    //     printf(">Angle X: %f\n", data_point.angle_x);
-    //     printf(">Angle Y: %f\n", data_point.angle_y);
-    //     printf(">Angle Z: %f\n", data_point.angle_z);
-    //     printf(">Gyro X: %f\n", data_point.gyro_x);
-    //     printf(">Gyro Y: %f\n", data_point.gyro_y);
-    //     printf(">Gyro Z: %f\n", data_point.gyro_z);
-    //     printf(">Accel X: %f\n", data_point.acc_x);
-    //     printf(">Accel Y: %f\n", data_point.acc_y);
-    //     printf(">Accel Z: %f\n", data_point.acc_z);
-    // #endif
-
-    critical_section_exit(&imu_buffer.lock); 
+    orientation_local.acc_x = ((int16_t)((temp[1]<<8) | temp[0])) / 100.0;
+    orientation_local.acc_y = ((int16_t)((temp[3]<<8) | temp[2])) / 100.0;
+    orientation_local.acc_z = ((int16_t)((temp[5]<<8) | temp[4])) / 100.0;
 }
 
 void reset_imu() {
@@ -203,7 +197,7 @@ void reset_imu() {
     5. Swap to Config
     6. Save Config Data if Changed
     7. Swap to NDOF
-    8. Shared Buffer Setup
+    8. Buffer Setup
     9. Timer & Alarm Setup
 */
 void init_imu() {
@@ -298,27 +292,18 @@ void init_imu() {
     config_data[1] = NDOF_MODE;
     i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, config_data, 2, false);
     sleep_ms(25);
-    
+
     //8.
-    imu_buffer.count = 0;
     imu_buffer.head = 0;
     imu_buffer.tail = 0;
-    critical_section_init(&imu_buffer.lock);
+    mutex_init(&imu_buffer.lock);
 
     //9.
     timer0_hw->inte |= 1 << 1;
-    irq_set_exclusive_handler(TIMER0_IRQ_1, read_imu);
+    irq_set_exclusive_handler(TIMER0_IRQ_1, imu_isr);
     irq_set_enabled(TIMER0_IRQ_1, true);
 
     #ifdef LOG_MODE_0
         printf("IMU Boot Sequence Complete\n\n");
-    #endif
-}
-
-void start_polling_imu() {
-    timer0_hw->alarm[1] = timer0_hw->timerawl + (uint32_t) 10000;
-
-    #ifdef LOG_MODE_0
-        printf("Core 0 IMU Polling started...\n");
     #endif
 }

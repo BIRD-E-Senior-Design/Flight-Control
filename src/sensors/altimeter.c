@@ -27,43 +27,59 @@
 #define ALT_OS2 5
 #define ALT_MODE_ALT 7
 
+//Exported Vars
 alt_fifo_t alt_buffer;
+float alt_baro_local;
+bool alt_data_ready = false;
 
 //BUFFER INTERFACE
-static void fifo_push(alt_fifo_t* fifo, float val) {
-    if(fifo->count + 1 <= 64) {
-        fifo->buffer[fifo->tail] = val; 
-        fifo->tail = (fifo->tail + 1) % 64;
-        fifo->count++; 
+bool fifo_push_alt(alt_fifo_t* fifo, float val) {
+    int next_tail = (fifo->tail + 1) & 7;
+
+    //mutex_enter_blocking(&fifo->lock);
+    if ((void*)next_tail == fifo->buffer) {
+        //mutex_exit(&fifo->lock);
+        return false;
     }
+    fifo->buffer[fifo->tail] = val; 
+    fifo->tail = next_tail;
+    //mutex_exit(&fifo->lock);
+    //this means buffer is full and math has stopped running, bad
+    return true;
 }
 
-int alt_fifo_pop(alt_fifo_t* fifo, float* dest) {
-    critical_section_enter_blocking(&fifo->lock); 
-    
-    if(!fifo->count) {
-        critical_section_exit(&fifo->lock); 
-        return 0;
+bool fifo_pop_alt(alt_fifo_t* fifo, float* dest) {
+    //mutex_enter_blocking(&fifo->lock);
+    if(fifo->head == fifo->tail) {
+        //mutex_exit(&fifo->lock);
+        return false;
     }
-
     *dest = fifo->buffer[fifo->head];
-    fifo->count--;
-    fifo->head = (fifo->head + 1) % 64;
-
-    critical_section_exit(&fifo->lock); 
-    return 1; 
+    fifo->head = (fifo->head + 1) & 7;
+    //mutex_exit(&fifo->lock);
+    //buffer is empty, not so bad
+    return true; 
 }
 
+//TIMER INTR
+void alt_isr() {
+    hw_clear_bits(&timer0_hw->intr, 4); //ack interrupt
+    alt_data_ready = true; //set flag for main loop
+    timer0_hw->alarm[2] = timer0_hw->timerawl + (uint32_t) 200000; //reset alarm
+}
+
+void start_polling_altimeter() {
+    timer0_hw->alarm[2] = timer0_hw->timerawl + (uint32_t) 200000;
+
+    #ifdef LOG_MODE_0
+        printf("Core 0 Altimeter Polling started...\n");
+    #endif
+}
 
 //ALTIMETER INTERFACE
 void read_altimeter() {
     uint8_t config[2];
-    uint8_t reg;
     uint8_t data[3]; 
-
-    critical_section_enter_blocking(&alt_buffer.lock);
-
-    hw_clear_bits(&timer0_hw->intr, 4); //ack interrupt
 
     // read OST bit
     config[0] = ALT_CTRLREG1;
@@ -76,18 +92,12 @@ void read_altimeter() {
     i2c_write_blocking(i2c1, ALT_I2C_ADDR, config, 2, false);
 
     //Read OUT_P MSB, CSB, LSB
-    reg =  ALT_OUT_P_MSB;
-    i2c_write_blocking(i2c1, ALT_I2C_ADDR, &reg, 1, true); 
+    config[0] =  ALT_OUT_P_MSB;
+    i2c_write_blocking(i2c1, ALT_I2C_ADDR, config, 1, true); 
     i2c_read_blocking(i2c1, ALT_I2C_ADDR, data, 3, false); 
    
     // convert from Q16.4
-    float altitude = ((data[0] << 24) | (data[1] << 16) | (data[2] << 8)) / 65536.0;
-
-    fifo_push(&alt_buffer,altitude);
-
-    timer0_hw->alarm[2] = timer0_hw->timerawl + (uint32_t) 200000;
-
-    critical_section_exit(&alt_buffer.lock);
+    alt_baro_local = ((data[0] << 24) | (data[1] << 16) | (data[2] << 8)) / 65536.0;
 }
 
 void init_altimeter() {
@@ -106,20 +116,11 @@ void init_altimeter() {
 
     //Timer & Alarm
     timer0_hw->inte |= 1 << 2;
-    irq_set_exclusive_handler(TIMER0_IRQ_2, read_altimeter);
+    irq_set_exclusive_handler(TIMER0_IRQ_2, alt_isr);
     irq_set_enabled(TIMER0_IRQ_2, true);
 
     // Buffer
-    alt_buffer.count = 0;
     alt_buffer.head = 0;
     alt_buffer.tail = 0;
-    critical_section_init(&alt_buffer.lock);
-}
-
-void start_polling_altimeter() {
-    timer0_hw->alarm[2] = timer0_hw->timerawl + (uint32_t) 200000;
-
-    #ifdef LOG_MODE_0
-        printf("Core 0 Altimeter Polling started...\n");
-    #endif
+    mutex_init(&alt_buffer.lock);
 }

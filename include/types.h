@@ -2,7 +2,7 @@
 #define TYPES_H
 
 #include <stdio.h>
-#include "pico/critical_section.h"
+#include "pico/mutex.h"
 
 //IMU TYPES
 typedef struct {
@@ -18,11 +18,10 @@ typedef struct {
 } imu_measurement;
 
 typedef struct {
-    volatile imu_measurement buffer[64];
-    volatile int count; 
+    volatile imu_measurement buffer[8];
     volatile int head; 
     volatile int tail; 
-    critical_section_t lock; 
+    mutex_t lock;
 } imu_fifo_t; 
 
 typedef struct {
@@ -40,18 +39,12 @@ typedef struct {
     uint8_t valid;
 } imu_calibration_t;
 
-
 //TOF TYPES
 typedef struct {
-    uint16_t grid[16];
-} tof_measurement;
-
-typedef struct {
-    volatile tof_measurement buffer[64];
-    volatile int count; 
+    volatile uint16_t buffer[16][8];
     volatile int head; 
     volatile int tail; 
-    critical_section_t lock; 
+    mutex_t lock; 
 } tof_fifo_t; 
 
 //FLOW TYPES
@@ -61,29 +54,26 @@ typedef struct {
 } flow_measurement;
 
 typedef struct {
-    volatile flow_measurement buffer[64];
-    volatile int count; 
+    volatile flow_measurement buffer[8];
     volatile int head; 
     volatile int tail; 
-    critical_section_t lock; 
+    mutex_t lock; 
 } flow_fifo_t; 
 
 //RPZ TYPES
 typedef struct {
-    volatile uint8_t buffer[64];
-    volatile int count; 
+    volatile uint8_t buffer[8];
     volatile int head; 
     volatile int tail; 
-    critical_section_t lock; 
+    mutex_t lock; 
 } cmd_fifo_t; 
 
 //ALT TYPES 
 typedef struct {
-    volatile float buffer[64];
-    volatile int count; 
+    volatile float buffer[8];
     volatile int head; 
     volatile int tail; 
-    critical_section_t lock; 
+    mutex_t lock; 
 } alt_fifo_t; 
 
 #endif

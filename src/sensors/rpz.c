@@ -2,7 +2,7 @@
 #include "sensors/rpz.h"
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
-#include "pico/critical_section.h"
+#include "pico/mutex.h"
 #include "config.h"
 
 //buffer
@@ -10,27 +10,31 @@ cmd_fifo_t cmd_buffer;
 
 //BUFFER INTERFACE
 static void fifo_push(cmd_fifo_t* fifo, uint8_t val) {
-    if(fifo->count + 1 <= 64) {
-        fifo->buffer[fifo->tail] = val; 
-        fifo->tail = (fifo->tail + 1) % 64;
-        fifo->count++; 
+    int next_tail = (fifo->tail + 1) & 7;
+
+    //mutex_enter_blocking(&fifo->lock);
+    if ((void*)next_tail == fifo->buffer) {
+        //mutex_exit(&fifo->lock);
+        return false;
     }
+    fifo->buffer[fifo->tail] = val; 
+    fifo->tail = next_tail;
+    //mutex_exit(&fifo->lock);
+    //this means buffer is full and math has stopped running, bad
+    return true;
 }
 
 int cmd_fifo_pop(cmd_fifo_t* fifo, uint8_t* dest) {
-    critical_section_enter_blocking(&fifo->lock); 
-    
-    if(!fifo->count) {
-        critical_section_exit(&fifo->lock); 
-        return 0;
+    //mutex_enter_blocking(&fifo->lock);
+    if(fifo->head == fifo->tail) {
+        //mutex_exit(&fifo->lock);
+        return false;
     }
-
     *dest = fifo->buffer[fifo->head];
-    fifo->count--;
-    fifo->head = (fifo->head + 1) % 64;
-
-    critical_section_exit(&fifo->lock); 
-    return 1; 
+    fifo->head = (fifo->head + 1) & 7;
+    //mutex_exit(&fifo->lock);
+    //buffer is empty, not so bad
+    return true;  
 }
 
 //RPZ INTERFACE
@@ -43,14 +47,10 @@ void send_nack() {
 }
 
 void get_command() {
-    critical_section_enter_blocking(&cmd_buffer.lock); 
-
     uart1_hw->icr = UART_UARTICR_RXIC_BITS | UART_UARTICR_RTIC_BITS;
     while (uart_is_readable(uart1)) {
         fifo_push(&cmd_buffer,uart1_hw->dr && 0xff);
     }
-
-    critical_section_exit(&cmd_buffer.lock); 
 }
 
 void init_rpz() {
@@ -63,10 +63,9 @@ void init_rpz() {
     gpio_set_function(PIN_RPZ_TX, GPIO_FUNC_UART);
 
     //buffer
-    cmd_buffer.count = 0;
     cmd_buffer.head = 0;
     cmd_buffer.tail = 0;
-    critical_section_init(&cmd_buffer.lock);
+    mutex_init(&cmd_buffer.lock);
 
     //interrupt
     uart_set_irqs_enabled(uart1, true, false);

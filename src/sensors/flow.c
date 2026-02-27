@@ -93,28 +93,12 @@ flow_fifo_t flow_buffer;
 
 
 //BUFFER INTERFACE
-static void fifo_push(flow_fifo_t* fifo, flow_measurement val) {
-    if(fifo->count + 1 <= 64) {
-        fifo->buffer[fifo->tail] = val; 
-        fifo->tail = (fifo->tail + 1) % 64;
-        fifo->count++; 
-    }
+bool fifo_push_flow(flow_fifo_t* fifo, flow_measurement val) {
+
 }
 
-int fifo_pop_flow(flow_fifo_t* fifo, flow_measurement* dest) {
-    critical_section_enter_blocking(&fifo->lock); 
-    
-    if(!fifo->count) {
-        critical_section_exit(&fifo->lock); 
-        return 0;
-    }
+bool fifo_pop_flow(flow_fifo_t* fifo, flow_measurement* dest) {
 
-    *dest = fifo->buffer[fifo->head];
-    fifo->count--;
-    fifo->head = (fifo->head + 1) % 64;
-
-    critical_section_exit(&fifo->lock); 
-    return 1; 
 }
 
 //wont lie this is some magic number voodoo, same as the ToF there is no documentation or explanation for the init sequence
@@ -131,12 +115,10 @@ void init_flow() {
     sleep_ms(5);
 
     for (int i = 0; i < 59; i++) {
-        spi_write16_blocking(spi1,&init_buffer1,1);
+        spi_write16_blocking(spi1,init_buffer1,1);
     }
     sleep_ms(10);
     for (int i = 0; i < 17; i++) {
-        spi_write16_blocking(spi1,&init_buffer2,1);
+        spi_write16_blocking(spi1,init_buffer2,1);
     }
-    
-
 }   

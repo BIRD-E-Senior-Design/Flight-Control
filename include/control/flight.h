@@ -5,7 +5,7 @@
 
 void motor_mixer(float f[4], float S[4]);
 
-void grid_choice(imu_measurement* orientation, tof_measurement* distance);
+uint16_t grid_choice(imu_measurement* orientation, uint16_t* distance);
 
 void attitude_outer_loop(float target_rate[3], float target_state[3], float current_state[3]);
 void attitude_inner_loop(float torque[3], float target_rate[3], float current_rate[3]);

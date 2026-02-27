@@ -2,7 +2,7 @@
 #include <math.h>
 #include "types.h"
 
-#define d 0.2 //meters
+#define d 0.02 //meters
 #define c 0.1 //no unit
 #define Y 5 //degrees
 #define A 0.2 //meters
@@ -47,7 +47,7 @@ void motor_mixer(float f[4], float S[4]) {
 //pitch goes positive to move down the square, negative to move up
 //roll goes positive to move left on the square, negative to move right
 //equation is pitch_square*4 + roll
-void grid_choice(imu_measurement* orientation, tof_measurement* distance) {
+uint16_t grid_choice(imu_measurement* orientation, uint16_t* distance) {
     int pitch_nadir, roll_nadir;
     if (orientation->angle_y > 0) {
         if (orientation->angle_y < 11.701) {
@@ -75,7 +75,7 @@ void grid_choice(imu_measurement* orientation, tof_measurement* distance) {
         else {roll_nadir = 3;}
     }
     //need to add in corrections if tilted past 22.5 degrees in any direction
-    float altitude = distance->grid[pitch_nadir + roll_nadir];
+    return distance[pitch_nadir + roll_nadir];
 }
 
 
