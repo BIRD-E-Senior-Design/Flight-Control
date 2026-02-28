@@ -6,7 +6,7 @@
 #define c 0.1 //no unit
 #define Y 5 //degrees
 #define A 0.2 //meters
-#define T 0.5 //seconds
+#define T 500000 //microseconds
 #define dt 0.01 //seconds
 #define alpha 0.9 //no unit
 #define roll_max 10.0 //degrees
@@ -49,27 +49,27 @@ void motor_mixer(float f[4], float S[4]) {
 //equation is pitch_square*4 + roll
 uint16_t grid_choice(imu_measurement* orientation, uint16_t* distance) {
     int pitch_nadir, roll_nadir;
-    if (orientation->angle_y > 0) {
-        if (orientation->angle_y < 11.701) {
+    if (orientation->angle[1] > 0) {
+        if (orientation->angle[1] < 11.701) {
             pitch_nadir = 4;
         }
         else {pitch_nadir = 0;}
     }
     else  {
-        if (orientation->angle_y > -11.701) {
+        if (orientation->angle[1] > -11.701) {
             pitch_nadir = 8;
         }
         else {pitch_nadir = 12;}
     }
 
-    if (orientation->angle_z > 0) {
-        if (orientation->angle_z < 11.701) {
+    if (orientation->angle[2] > 0) {
+        if (orientation->angle[2] < 11.701) {
             roll_nadir = 1;
         }
         else {roll_nadir = 0;}
     }
     else  {
-        if (orientation->angle_z > -11.701) {
+        if (orientation->angle[2] > -11.701) {
             roll_nadir = 2;
         }
         else {roll_nadir = 3;}
@@ -94,14 +94,14 @@ void attitude_inner_loop(float torque[3], float target_rate[3], float current_ra
     }
 }
 
-float altitude_outer_loop(float target_state, float current_state) {
-    return -kp_outer_alt*(current_state - target_state);
+void altitude_outer_loop(float* target_rate, float target_state, float current_state) {
+    *target_rate = -kp_outer_alt*(current_state - target_state);
 }
 
-float altitude_inner_loop(float target_rate, float current_rate) {
+void altitude_inner_loop(float* f_total, float target_rate, float current_rate) {
     float e = current_rate - target_rate;
     integral_e_alt += e *dt;
-    return THRUST_HOVER + -kp_inner_alt*e -ki_inner_alt*integral_e_alt;
+    *f_total = THRUST_HOVER + -kp_inner_alt*e -ki_inner_alt*integral_e_alt;
 }
 
 //dt for position is double since it is gathered at 50Hz instead of 100Hz

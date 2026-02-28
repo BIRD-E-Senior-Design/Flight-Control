@@ -92,7 +92,7 @@ bool fifo_pop_imu(imu_fifo_t* fifo, imu_measurement* dest) {
 void imu_isr() {
     hw_clear_bits(&timer0_hw->intr, 1 << 1); //ack interrupt
     imu_data_ready = true; //set flag for main loop
-    timer0_hw->alarm[1] = timer0_hw->timerawl + (uint32_t) 11000; //reset alarm
+    //timer0_hw->alarm[1] = timer0_hw->timerawl + (uint32_t) 10000; //reset alarm
 }
 
 void start_polling_imu() {
@@ -112,20 +112,20 @@ void read_imu() {
     internal_reg_addr = GYRO_ADDR;
     i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
     i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,temp,12,false); 
-    orientation_local.gyro_x = ((int16_t)((temp[1]<<8) | temp[0])) / 16.0;
-    orientation_local.gyro_y = ((int16_t)((temp[3]<<8) | temp[2])) / 16.0;
-    orientation_local.gyro_z = ((int16_t)((temp[5]<<8) | temp[4])) / 16.0;
-    orientation_local.angle_x = ((int16_t)((temp[7]<<8) | temp[6])) / 16.0;
-    orientation_local.angle_y = ((int16_t)((temp[9]<<8) | temp[8])) / 16.0;
-    orientation_local.angle_z = ((int16_t)((temp[11]<<8) | temp[10])) / 16.0;
+    orientation_local.gyro[0] = ((int16_t)((temp[1]<<8) | temp[0])) / 16.0;
+    orientation_local.gyro[1] = ((int16_t)((temp[3]<<8) | temp[2])) / 16.0;
+    orientation_local.gyro[2] = ((int16_t)((temp[5]<<8) | temp[4])) / 16.0;
+    orientation_local.angle[0] = ((int16_t)((temp[7]<<8) | temp[6])) / 16.0;
+    orientation_local.angle[1] = ((int16_t)((temp[9]<<8) | temp[8])) / 16.0;
+    orientation_local.angle[2] = ((int16_t)((temp[11]<<8) | temp[10])) / 16.0;
 
     //ACCELEROMETER DATA
     internal_reg_addr = ACC_ADDR;
     i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
     i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,temp,6,false);
-    orientation_local.acc_x = ((int16_t)((temp[1]<<8) | temp[0])) / 100.0;
-    orientation_local.acc_y = ((int16_t)((temp[3]<<8) | temp[2])) / 100.0;
-    orientation_local.acc_z = ((int16_t)((temp[5]<<8) | temp[4])) / 100.0;
+    orientation_local.accel[0] = ((int16_t)((temp[1]<<8) | temp[0])) / 100.0;
+    orientation_local.accel[1] = ((int16_t)((temp[3]<<8) | temp[2])) / 100.0;
+    orientation_local.accel[2] = ((int16_t)((temp[5]<<8) | temp[4])) / 100.0;
 }
 
 void reset_imu() {

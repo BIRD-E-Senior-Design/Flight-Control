@@ -41,7 +41,7 @@ void init_pwm_motor(void) {
     #endif
 }
 
-void set_motors(int fl, int fr, int bl, int br) {
+void set_motors(int fl, int bl, int fr, int br) {
     pwm_set_chan_level(SLICE_FRONT,CHAN_LEFT, fl);
     pwm_set_chan_level(SLICE_FRONT,CHAN_RIGHT, fr); 
     pwm_set_chan_level(SLICE_BACK,CHAN_LEFT, bl);

@@ -6,15 +6,9 @@
 
 //IMU TYPES
 typedef struct {
-    float angle_x;
-    float angle_y;
-    float angle_z;
-    float gyro_x;
-    float gyro_y;
-    float gyro_z;
-    float acc_x;
-    float acc_y;
-    float acc_z;
+    float angle[3];
+    float gyro[3];
+    float accel[3];
 } imu_measurement;
 
 typedef struct {

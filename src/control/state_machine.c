@@ -11,18 +11,77 @@
 #include "sensors/altimeter.h"
 #include "config.h"
 
-//GLOBALS (from other files)
+//Core 1 Local Sensor Data
 imu_measurement orientation;
 uint16_t distance_meas[16];
-float alt_baro;
 
-void flight_control(void) {
+//Attitude Control State
+float target_angle[3] = {0, 0, 0};
+float target_angular_velocity[3];
+float cmd_tilt[3] = {0, 0, 0};
+bool new_cmd_tilt[3] = {false, false, false};
+
+//Altitude Control State
+float target_altitude = 1;
+float target_linear_velocity;
+float cmd_altitude = 0;
+bool new_cmd_altitude = false;
+
+float prev_altitude = 0;
+float current_altitude;
+float linear_velocity;
+
+//Mixer State
+float torque[3];
+float f_total;
+float S[4];
+float force[4];
+uint16_t motor_speeds[4];
+
+//Timing
+uint32_t prev_time = 0;
+
+void flight_control(void)  {
     for (;;) {
-        multicore_fifo_pop_blocking(); //wait for signal from core 0
+        //Wait for signal from core 0
+        multicore_fifo_pop_blocking();
 
-        //fifo_pop_alt(&alt_buffer,&alt_baro);
+        prev_time = timer0_hw->timerawl;
+
+        //Gather Data from Core 0
         fifo_pop_imu(&imu_buffer,&orientation);
         fifo_pop_tof(&tof_buffer,distance_meas);
+
+        //Calculate Current Altitude and Linear Velocity
+        current_altitude = grid_choice(&orientation, distance_meas);
+        linear_velocity = linear_velo_fuse(prev_altitude, current_altitude, orientation.accel[2]);
+
+        //Set Target State
+        att_target_set(target_angle, new_cmd_tilt, cmd_tilt, timer0_hw->timerawl);
+        alt_target_set(&target_altitude, new_cmd_altitude, cmd_altitude);
+
+        //Run Outer Loops
+        attitude_outer_loop(target_angular_velocity, target_angle, orientation.angle);
+        altitude_outer_loop(&target_linear_velocity, target_altitude, current_altitude);
+
+        //Run Inner Loops
+        attitude_inner_loop(torque,target_angular_velocity,orientation.gyro);
+        altitude_inner_loop(&f_total,target_linear_velocity, linear_velocity);
+
+        //Motor Mixer
+        S[0] = f_total;
+        S[1] = torque[0];
+        S[2] = torque[1];
+        S[3] = torque[2];
+        motor_mixer(force,S);
+
+        //Force Translation & Motor Update
+        for (int i=0; i<4; i++) {
+            motor_speeds[i] = force_translator(force[i]);
+        }
+        set_motors(motor_speeds[0], motor_speeds[1], motor_speeds[2], motor_speeds[3]);
+
+        printf(">Math Computation Time: %d\n", timer0_hw->timerawl - prev_time);
 
         //printf(">AngleX: %f\n",orientation.angle_x);
         //printf(">AngleY: %f\n",orientation.angle_y);
@@ -36,4 +95,4 @@ void flight_control(void) {
 
         //printf(">Altitude: %hu\n", grid_choice(&orientation, distance_meas));
     }
-}
+}    
