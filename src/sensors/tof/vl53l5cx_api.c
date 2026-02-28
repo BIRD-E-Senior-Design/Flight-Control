@@ -12,8 +12,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "tof/vl53l5cx_api.h"
-#include "tof/vl53l5cx_buffers.h"
+#include "sensors/tof/vl53l5cx_api.h"
+#include "sensors/tof/vl53l5cx_buffers.h"
 
 /**
  * @brief Inner function, not available outside this file. This function is used
