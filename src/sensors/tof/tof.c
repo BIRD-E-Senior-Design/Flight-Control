@@ -22,31 +22,31 @@ VL53L5CX_Configuration tof_config;
 bool fifo_push_tof(tof_fifo_t* fifo, uint16_t* val) { 
     int next_tail = (fifo->tail + 1) & 7;
 
-    //mutex_enter_blocking(&fifo->lock);
+    mutex_enter_blocking(&fifo->lock);
     if ((void*)next_tail == fifo->buffer) {
-        //mutex_exit(&fifo->lock);
+        mutex_exit(&fifo->lock);
         return false;
     }
     for (int i=0; i<16; i++) {
         fifo->buffer[fifo->tail][i] = val[i];
     }
     fifo->tail = next_tail;
-    //mutex_exit(&fifo->lock);
+    mutex_exit(&fifo->lock);
     //this means buffer is full and math has stopped running, bad
     return true;
 }
 
 bool fifo_pop_tof(tof_fifo_t* fifo, uint16_t* dest) {
-    //mutex_enter_blocking(&fifo->lock);
+    mutex_enter_blocking(&fifo->lock);
     if(fifo->head == fifo->tail) {
-        //mutex_exit(&fifo->lock);
+        mutex_exit(&fifo->lock);
         return false;
     }
     for(int i=0; i<16; i++) {
         dest[i] = fifo->buffer[fifo->head][i];
     }
     fifo->head = (fifo->head + 1) & 7;
-    //mutex_exit(&fifo->lock);
+    mutex_exit(&fifo->lock);
     //buffer is empty, not so bad
     return true; 
 }

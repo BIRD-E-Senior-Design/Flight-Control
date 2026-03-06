@@ -1,6 +1,6 @@
 # BIRD E Flight Control
 
-Drone flight controller firmware written for an RP2350a.
+Drone flight controller firmware written for an RP2350B.
 ## Contents
 
 ## Relevant Diagrams

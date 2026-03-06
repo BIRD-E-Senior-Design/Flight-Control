@@ -18,21 +18,6 @@ typedef struct {
     mutex_t lock;
 } imu_fifo_t; 
 
-typedef struct {
-    uint16_t acc_off_x;
-    uint16_t acc_off_y;
-    uint16_t acc_off_z;
-    uint16_t mag_off_x;
-    uint16_t mag_off_y;
-    uint16_t mag_off_z;
-    uint16_t gyro_off_x;
-    uint16_t gyro_off_y;
-    uint16_t gyro_off_z;
-    uint16_t acc_rad;
-    uint16_t mag_rad;
-    uint8_t valid;
-} imu_calibration_t;
-
 //TOF TYPES
 typedef struct {
     volatile uint16_t buffer[16][8];
@@ -55,8 +40,25 @@ typedef struct {
 } flow_fifo_t; 
 
 //RPZ TYPES
+enum command {
+    SHUTDOWN = 0,
+    STARTUP = 1,
+    DESCEND = 2,
+    TURN_LEFT = 3,
+    TURN_RIGHT = 4,
+    UP = 5,
+    DOWN = 6,
+    ROLL = 7,
+    PITCH = 8
+};
+
 typedef struct {
-    volatile uint8_t buffer[8];
+    enum command id;
+    float frac;
+} cmd_t;
+
+typedef struct {
+    volatile cmd_t buffer[8];
     volatile int head; 
     volatile int tail; 
     mutex_t lock; 

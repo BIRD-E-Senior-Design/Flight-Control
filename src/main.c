@@ -20,7 +20,10 @@ int main() {
     uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
 
     //WAIT FOR STARTUP CMD
-    //needs to be filled in later
+    cmd_t local_cmd;
+    do {
+        fifo_pop_cmd(&cmd_buffer,&local_cmd);
+    } while (local_cmd.id != STARTUP);
 
     //IMU, ALTIMETER COMMS SETUP
     i2c_init(i2c1, 400000); //400 KHz: i2c fast mode
@@ -54,9 +57,14 @@ int main() {
     uint32_t delay_us = 10000;
     uint32_t prev_time = 0;
     uint32_t int_status;
+    bool new_data = false;
+    uint32_t loop_time = 0;
 
     for (;;) {
-
+        new_data = false;
+        if (imu_data_ready) {
+            new_data = true;
+        }
         //disable interrupts before i2c transactions
         int_status = save_and_disable_interrupts();
 
@@ -70,7 +78,8 @@ int main() {
             fifo_push_imu(&imu_buffer,orientation_local);
 
             //adjust next alarm delay to keep clocks synchronized-ish
-            delay_us = ((timer0_hw->timerawl - prev_time) > 785) ? delay_us + 25 : 10000; 
+            delay_us = ((timer0_hw->timerawl - prev_time) > 785) ? delay_us + 10 : 10000;
+            //printf(">IMU Time: %d\n", (int)(timer0_hw->timerawl - prev_time));
         }
         if (tof_data_ready) {
             tof_data_ready = false;
@@ -79,7 +88,11 @@ int main() {
         }
         restore_interrupts(int_status);
 
-        multicore_fifo_push_blocking(1); //flag to other core
+        //multicore_fifo_push_blocking(1); //flag to other core
+        if (new_data) {
+            //printf(">Loop Time: %d\n", (int)(timer0_hw->timerawl - loop_time + 80));
+            loop_time = timer0_hw->timerawl;
+        }
     }
     
     return 0;

@@ -63,27 +63,27 @@ void __no_inline_not_in_flash_func(save_calib_data)(uint8_t* buffer) {
 bool fifo_push_imu(imu_fifo_t* fifo, imu_measurement val) {
     int next_tail = (fifo->tail + 1) & 7;
 
-    //mutex_enter_blocking(&fifo->lock);
+    mutex_enter_blocking(&fifo->lock);
     if ((void*)next_tail == fifo->buffer) {
-        //mutex_exit(&fifo->lock);
+        mutex_exit(&fifo->lock);
         return false;
     }
     fifo->buffer[fifo->tail] = val; 
     fifo->tail = next_tail;
-    //mutex_exit(&fifo->lock);
+    mutex_exit(&fifo->lock);
     //this means buffer is full and math has stopped running, bad
     return true;
 }
 
 bool fifo_pop_imu(imu_fifo_t* fifo, imu_measurement* dest) {
-    //mutex_enter_blocking(&fifo->lock);
+    mutex_enter_blocking(&fifo->lock);
     if(fifo->head == fifo->tail) {
-        //mutex_exit(&fifo->lock);
+        mutex_exit(&fifo->lock);
         return false;
     }
     *dest = fifo->buffer[fifo->head];
     fifo->head = (fifo->head + 1) & 7;
-    //mutex_exit(&fifo->lock);
+    mutex_exit(&fifo->lock);
     //buffer is empty, not so bad
     return true; 
 }
@@ -105,20 +105,21 @@ void start_polling_imu() {
 
 //IMU INTERFACE
 void read_imu() {
+    int err = 0;
     uint8_t temp[12];
     uint8_t internal_reg_addr;
 
     //GYROSCOPE & EULER ANGLE DATA
     internal_reg_addr = GYRO_ADDR;
     i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
-    i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,temp,12,false); 
+    i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,temp,12,false);
     orientation_local.gyro[0] = ((int16_t)((temp[1]<<8) | temp[0])) / 16.0;
     orientation_local.gyro[1] = ((int16_t)((temp[3]<<8) | temp[2])) / 16.0;
     orientation_local.gyro[2] = ((int16_t)((temp[5]<<8) | temp[4])) / 16.0;
     orientation_local.angle[0] = ((int16_t)((temp[7]<<8) | temp[6])) / 16.0;
     orientation_local.angle[1] = ((int16_t)((temp[9]<<8) | temp[8])) / 16.0;
     orientation_local.angle[2] = ((int16_t)((temp[11]<<8) | temp[10])) / 16.0;
-
+    
     //ACCELEROMETER DATA
     internal_reg_addr = ACC_ADDR;
     i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, true);
@@ -126,6 +127,7 @@ void read_imu() {
     orientation_local.accel[0] = ((int16_t)((temp[1]<<8) | temp[0])) / 100.0;
     orientation_local.accel[1] = ((int16_t)((temp[3]<<8) | temp[2])) / 100.0;
     orientation_local.accel[2] = ((int16_t)((temp[5]<<8) | temp[4])) / 100.0;
+    
 }
 
 void reset_imu() {
@@ -237,55 +239,55 @@ void init_imu() {
     #endif
 
     //3.
-    get_calib_data(flash_buffer); 
-    memcpy(&config_data[1],flash_buffer, sizeof(int8_t)*CALIB_DATA_BYTES);
-    memcpy(old_calib_data,flash_buffer, sizeof(int8_t)*CALIB_DATA_BYTES);
+    //get_calib_data(flash_buffer); 
+    //memcpy(&config_data[1],flash_buffer, sizeof(int8_t)*CALIB_DATA_BYTES);
+    //memcpy(old_calib_data,flash_buffer, sizeof(int8_t)*CALIB_DATA_BYTES);
 
-    config_data[0] = ACC_OFFSET_ADDR;
-    i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, config_data, CALIB_DATA_BYTES + 1, false);
+    //config_data[0] = ACC_OFFSET_ADDR;
+    //i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, config_data, CALIB_DATA_BYTES + 1, false);
 
     //4.
-    config_data[0] = OPR_MODE_ADDR;
-    config_data[1] = NDOF_MODE; //NDOF fusion mode
-    i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, config_data, 2, false);
-    sleep_ms(25);
+    //config_data[0] = OPR_MODE_ADDR;
+    //config_data[1] = NDOF_MODE; //NDOF fusion mode
+    //i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, config_data, 2, false);
+    //sleep_ms(25);
 
-    do {
-        internal_reg_addr = CALIB_STAT_ADDR; 
-        i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, false);
-        i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,flash_buffer,1,false);
+    // do {
+    //     internal_reg_addr = CALIB_STAT_ADDR; 
+    //     i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, false);
+    //     i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,flash_buffer,1,false);
 
-        #ifdef LOG_MODE_0
-            printf("Calibration Status (System, Gyro, Accel, Magnet) %x %x %x %x\n",(flash_buffer[0] & 0xc0) >> 6,(flash_buffer[0] & 0x30) >> 4,(flash_buffer[0] & 0x0c) >> 2,(flash_buffer[0] & 0x03));
-        #endif
+    //     #ifdef LOG_MODE_0
+    //         printf("Calibration Status (System, Gyro, Accel, Magnet) %x %x %x %x\n",(flash_buffer[0] & 0xc0) >> 6,(flash_buffer[0] & 0x30) >> 4,(flash_buffer[0] & 0x0c) >> 2,(flash_buffer[0] & 0x03));
+    //     #endif
 
-        sleep_ms(500);
+    //     sleep_ms(500);
 
-    } while (flash_buffer[0] != 0xff);
+    // } while (flash_buffer[0] != 0xff);
 
     //5.
-    config_data[0] = OPR_MODE_ADDR;
-    config_data[1] = CONFIG_MODE;
-    i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, config_data, 2, false);
-    sleep_ms(25);
+    //config_data[0] = OPR_MODE_ADDR;
+    //config_data[1] = CONFIG_MODE;
+    //i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, config_data, 2, false);
+    //sleep_ms(25);
 
     //6.
-    internal_reg_addr = ACC_OFFSET_ADDR;
-    i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, false);
-    i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,flash_buffer,CALIB_DATA_BYTES,false);
+    // internal_reg_addr = ACC_OFFSET_ADDR;
+    // i2c_write_blocking(imu_i2c, IMU_I2C_ADDR, &internal_reg_addr, 1, false);
+    // i2c_read_blocking(imu_i2c,IMU_I2C_ADDR,flash_buffer,CALIB_DATA_BYTES,false);
     
-    for (int i = 0; i < 22; i++) {
-        if (old_calib_data[i] != flash_buffer[i]) {
-            save_calib_data(flash_buffer);
-            break;
-        }
-    }
+    // for (int i = 0; i < 22; i++) {
+    //     if (old_calib_data[i] != flash_buffer[i]) {
+    //         save_calib_data(flash_buffer);
+    //         break;
+    //     }
+    // }
 
-    #ifdef LOG_MODE_0
-        for (int i = 0; i < CALIB_DATA_BYTES; i+=2) {
-            printf("%x %x\n",flash_buffer[i+1],flash_buffer[i]);
-        }
-    #endif
+    // #ifdef LOG_MODE_0
+    //     for (int i = 0; i < CALIB_DATA_BYTES; i+=2) {
+    //         printf("%x %x\n",flash_buffer[i+1],flash_buffer[i]);
+    //     }
+    // #endif
 
     //7.
     config_data[0] = OPR_MODE_ADDR; 

@@ -5,13 +5,11 @@
 #include "types.h"
 
 //PUBLIC API
-void send_ack();
-
-void send_nack();
+void parse_command();
 
 void init_rpz();
 
-int cmd_fifo_pop(cmd_fifo_t* fifo, uint8_t* dest);
+bool fifo_pop_cmd(cmd_fifo_t* fifo, cmd_t* dest);
 
 //PUBLIC BUFFER
 extern cmd_fifo_t cmd_buffer;

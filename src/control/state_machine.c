@@ -38,19 +38,26 @@ float S[4];
 float force[4];
 uint16_t motor_speeds[4];
 
+
+bool new_imu_data = false;
+bool new_tof_data = false;
+
 //Timing
 uint32_t prev_time = 0;
 
 void flight_control(void)  {
     for (;;) {
         //Wait for signal from core 0
-        multicore_fifo_pop_blocking();
-
-        prev_time = timer0_hw->timerawl;
-
+        //multicore_fifo_pop_blocking();
+        
         //Gather Data from Core 0
-        fifo_pop_imu(&imu_buffer,&orientation);
-        fifo_pop_tof(&tof_buffer,distance_meas);
+        do {
+            new_imu_data = fifo_pop_imu(&imu_buffer,&orientation);
+            new_tof_data = fifo_pop_tof(&tof_buffer,distance_meas);
+        } while(!new_imu_data && !new_tof_data);
+        
+        printf(">Loop Time: %lu\n", timer0_hw->timerawl - prev_time);
+        prev_time = timer0_hw->timerawl;
 
         //Calculate Current Altitude and Linear Velocity
         current_altitude = grid_choice(&orientation, distance_meas);
@@ -81,11 +88,9 @@ void flight_control(void)  {
         }
         set_motors(motor_speeds[0], motor_speeds[1], motor_speeds[2], motor_speeds[3]);
 
-        printf(">Math Computation Time: %d\n", timer0_hw->timerawl - prev_time);
-
-        //printf(">AngleX: %f\n",orientation.angle_x);
-        //printf(">AngleY: %f\n",orientation.angle_y);
-        //printf(">AngleZ: %f\n",orientation.angle_z);
+        //printf(">AngleX: %f\n",orientation.angle[0]);
+        //printf(">AngleY: %f\n",orientation.angle[1]);
+        //printf(">AngleZ: %f\n",orientation.angle[2]);
         //printf(">AccelX: %f\n",orientation.acc_x);
         //printf(">AccelY: %f\n",orientation.acc_y);
         //printf(">AccelZ: %f\n",orientation.acc_z);
