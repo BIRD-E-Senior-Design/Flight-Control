@@ -22,7 +22,7 @@ const float K_inv[4][4] =
 {0.25, (1/(4*d)), (1/(4*d)), (1/(4*c))},
 {0.25, -(1/(4*d)), (1/(4*d)), -(1/(4*c))}};
 
-const float kp_outer_att[3] = {2, 2, 2};
+const float kp_outer_att[3] = {1.5, 1.5, 1.5};
 const float kp_inner_att[3] = {0, 0, 0};
 const float ki_inner_att[3] = {0.1, 0.1, 0.1};
 
