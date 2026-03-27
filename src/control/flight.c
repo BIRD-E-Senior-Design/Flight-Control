@@ -2,10 +2,12 @@
 #include <math.h>
 #include "types.h"
 
-#define d 0.02 //meters
+#define d 0.08 //meters //maybe dont use this one recalculate the matrix with d1 and d2
+#define d1 0.075
+#define d2 0.085
 #define c 0.1 //no unit
 #define Y 5 //degrees
-#define A 0.2 //meters
+#define A 0.02 //meters
 #define T 500000 //microseconds
 #define dt 0.01 //seconds
 #define alpha 0.9 //no unit
@@ -21,12 +23,12 @@ const float K_inv[4][4] =
 {0.25, -(1/(4*d)), (1/(4*d)), -(1/(4*c))}};
 
 const float kp_outer_att[3] = {2, 2, 2};
-const float kp_inner_att[3] = {2, 2, 2};
-const float ki_inner_att[3] = {2, 2, 2};
+const float kp_inner_att[3] = {0, 0, 0};
+const float ki_inner_att[3] = {0.1, 0.1, 0.1};
 
-const float kp_outer_alt = 2;
-const float kp_inner_alt = 2;
-const float ki_inner_alt = 2;
+const float kp_outer_alt = 1;
+const float kp_inner_alt = 0;
+const float ki_inner_alt = 0.1;
 
 float integral_e_att = 0;
 float integral_e_alt = 0;

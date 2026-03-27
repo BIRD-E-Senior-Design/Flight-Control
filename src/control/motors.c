@@ -12,7 +12,7 @@
 #define CHAN_RIGHT 1
 
 #define MOTOR_PWM_PERIOD_MS 2
-#define MOTOR_BASELINE 1000
+#define MOTOR_BASELINE 0
 
 void init_pwm_motor(void) {
     #ifdef LOG_MODE_0
@@ -38,6 +38,51 @@ void init_pwm_motor(void) {
 
     #ifdef LOG_MODE_0
         printf("PWM Setup Complete\n\n");
+    #endif
+
+    //throttle low and wait for powerup
+    set_motors(0,0,0,0);
+
+    //up to 1200
+    for (int i=0; i<1200;i+=25) {
+        set_motors(i,i,i,i);
+        sleep_ms(50);
+    }
+    sleep_ms(3000);
+    
+    //down to 800
+    for (int i=1200; i>800;i-=25) {
+        set_motors(i,i,i,i);
+        sleep_ms(50);
+    }
+    sleep_ms(3000);
+
+    //up to 1200
+    for (int i=800; i<1200;i+=25) {
+        set_motors(i,i,i,i);
+        sleep_ms(50);
+    }
+
+    //down to 800
+    for (int i=1200; i>800;i-=25) {
+        set_motors(i,i,i,i);
+        sleep_ms(50);
+    }
+
+    //up to 1200
+    for (int i=800; i<1200;i+=25) {
+        set_motors(i,i,i,i);
+        sleep_ms(50);
+    }
+
+    //down to 1100 to turn motors off
+    for (int i=1200; i>1100;i-=10) {
+        set_motors(i,i,i,i);
+        sleep_ms(50);
+    }
+
+    #ifdef LOG_MODE_0
+        printf("Motor Setup complete\n\n");
     #endif
 }
 

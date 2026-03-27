@@ -16,7 +16,7 @@ int main() {
     stdio_init_all();
 
     //UART INIT FOR USER CMDS
-    uart_init(uart1, 115200); //standard UART baud rate
+    //uart_init(uart1, 115200); //standard UART baud rate
     uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
 
     //WAIT FOR STARTUP CMD
