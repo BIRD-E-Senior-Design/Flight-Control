@@ -2,9 +2,9 @@
 #include <math.h>
 #include "types.h"
 
-#define d 0.08 //meters //maybe dont use this one recalculate the matrix with d1 and d2
-#define d1 0.075
-#define d2 0.085
+#define d1 0.07 //meters
+#define d2 0.08 //meters
+#define d3 0.09 //meters
 #define c 0.1 //no unit
 #define Y 5 //degrees
 #define A 0.02 //meters
@@ -17,10 +17,10 @@
 #define THRUST_HOVER 300 //grams (?)
 
 const float K_inv[4][4] = 
-{{0.25, (1/(4*d)), -(1/(4*d)), -(1/(4*c))},
-{0.25, -(1/(4*d)), -(1/(4*d)), (1/(4*c))},
-{0.25, (1/(4*d)), (1/(4*d)), (1/(4*c))},
-{0.25, -(1/(4*d)), (1/(4*d)), -(1/(4*c))}};
+{{-d2/(2*(-d1-d2)), -1/(2*(-d1-d2)), 1/(4*d3), -1/(4*c)},
+{-d1/(2*(-d1-d2)), 1/(2*(-d1-d2)), 1/(4*d3), 1/(4*c)},
+{d2/(2*(d1+d2)), -1/(2*(-d1-d2)), -1/(4*d3), 1/(4*c)},
+{-d1/(2*(-d1-d2)), 1/(2*(-d1-d2)), -1/(4*d3), -1/(4*c)}};
 
 const float kp_outer_att[3] = {1.5, 1.5, 1.5};
 const float kp_inner_att[3] = {0, 0, 0};

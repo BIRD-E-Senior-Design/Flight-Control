@@ -92,7 +92,7 @@ bool fifo_pop_imu(imu_fifo_t* fifo, imu_measurement* dest) {
 void imu_isr() {
     hw_clear_bits(&timer0_hw->intr, 1 << 1); //ack interrupt
     imu_data_ready = true; //set flag for main loop
-    //timer0_hw->alarm[1] = timer0_hw->timerawl + (uint32_t) 10000; //reset alarm
+    timer0_hw->alarm[1] = timer0_hw->timerawl + (uint32_t) 10000; //reset alarm
 }
 
 void start_polling_imu() {
