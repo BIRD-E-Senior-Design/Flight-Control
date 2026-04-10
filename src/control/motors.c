@@ -39,7 +39,9 @@ void init_pwm_motor(void) {
     #ifdef LOG_MODE_0
         printf("PWM Setup Complete\n\n");
     #endif
+}
 
+void motor_init_sequence() {
     //throttle low and wait for powerup
     set_motors(0,0,0,0);
 

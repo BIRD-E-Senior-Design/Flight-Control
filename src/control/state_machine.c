@@ -38,22 +38,23 @@ float S[4];
 float force[4];
 uint16_t motor_speeds[4];
 
-
+//Data Gathering
 bool new_imu_data = false;
 bool new_tof_data = false;
-
-//Timing
 
 void flight_control(void)  {
     for (;;) {
         //Wait for signal from core 0
-        //multicore_fifo_pop_blocking();
+        multicore_fifo_pop_blocking();
         
         //Gather Data from Core 0
         do {
             new_imu_data = fifo_pop_imu(&imu_buffer,&orientation);
             new_tof_data = fifo_pop_tof(&tof_buffer,distance_meas);
         } while(!new_imu_data && !new_tof_data);
+
+        //Check for commands
+        //fifo_pop_cmd();
 
         //Calculate Current Altitude and Linear Velocity
         current_altitude = grid_choice(&orientation, distance_meas);

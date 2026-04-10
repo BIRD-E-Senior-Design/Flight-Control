@@ -9,6 +9,7 @@
 #include "sensors/rpz.h"
 #include "control/state_machine.h"
 #include "control/motors.h"
+#include "test/motor_test.h"
 #include "config.h"
 
 int main() {
@@ -20,10 +21,10 @@ int main() {
     uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
 
     //WAIT FOR STARTUP CMD
-    cmd_t local_cmd;
-    do {
-        fifo_pop_cmd(&cmd_buffer,&local_cmd);
-    } while (local_cmd.id != STARTUP);
+    // cmd_t local_cmd;
+    // do {
+    //     fifo_pop_cmd(&cmd_buffer,&local_cmd);
+    // } while (local_cmd.id != STARTUP);
 
     //IMU, ALTIMETER COMMS SETUP
     i2c_init(i2c1, 400000); //400 KHz: i2c fast mode
@@ -45,6 +46,10 @@ int main() {
 
     //MOTOR STARTUP
     init_pwm_motor();
+    motor_init_sequence();
+
+    //OPTIONAL TEST SCRIPTS
+    test_all_motors();
 
     //POLLING START
     start_polling_imu();
