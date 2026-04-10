@@ -12,12 +12,12 @@ void test_all_motors() {
         if (gpio_get(21)) {
             throttle += 25;
             if (throttle > 2000) {throttle = 2000;}
-            set_motors(throttle,0,0,0);
+            set_motors(throttle,throttle,throttle,throttle);
         }
         if (gpio_get(26)) {
             throttle -= 25;
             if (throttle < 0) {throttle = 0;}
-            set_motors(throttle,0,0,0);
+            set_motors(throttle,throttle,throttle,throttle);
         }
         printf("Throttle %d\n", throttle);
 
