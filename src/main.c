@@ -16,9 +16,25 @@ int main() {
     //UART INIT FOR LOGGING
     stdio_init_all();
 
+    // for (int i=8; i<12; i++) {
+    //     gpio_init(i);
+    //     gpio_set_dir(i, true);
+    // }
+    // while (true) {
+    //     for (int i=8; i<12; i++) {
+    //         gpio_put(i, true);
+    //     }
+    //     sleep_ms(1000);
+    //     for (int i=8; i<12; i++) {
+    //         gpio_put(i, false);
+    //     }
+    //     sleep_ms(1000);
+    //     printf("hello world\n");
+    // }
+
     //UART INIT FOR USER CMDS
-    uart_init(uart1, 115200); //standard UART baud rate
-    uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
+    //uart_init(uart1, 115200); //standard UART baud rate
+    //uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
 
     //WAIT FOR STARTUP CMD
     // cmd_t local_cmd;
@@ -42,14 +58,14 @@ int main() {
     #endif
     init_imu();
     init_tof();
-    init_rpz();
+    //init_rpz();
 
     //MOTOR STARTUP
-    init_pwm_motor();
-    motor_init_sequence();
+    //init_pwm_motor();
+    //motor_init_sequence();
 
     //OPTIONAL TEST SCRIPTS
-    test_all_motors();
+    //test_all_motors();
 
     //POLLING START
     start_polling_imu();
@@ -76,8 +92,6 @@ int main() {
             fifo_push_tof(&tof_buffer,(uint16_t*)distance_local.distance_mm);
         }
         restore_interrupts(int_status);
-
-        multicore_fifo_push_blocking(1); //flag to other core
     }
     
     return 0;

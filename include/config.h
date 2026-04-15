@@ -6,8 +6,8 @@
     #define LOG_MODE_1
 
 //  PINS
-    #define PIN_I2C1_SDA 30 //I2C Buses
-    #define PIN_I2C1_SCL 31
+    #define PIN_I2C1_SDA 18 //I2C Buses
+    #define PIN_I2C1_SCL 19
     #define PIN_I2C0_SDA 28
     #define PIN_I2C0_SCL 29
 

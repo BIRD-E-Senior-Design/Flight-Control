@@ -44,9 +44,6 @@ bool new_tof_data = false;
 
 void flight_control(void)  {
     for (;;) {
-        //Wait for signal from core 0
-        multicore_fifo_pop_blocking();
-        
         //Gather Data from Core 0
         do {
             new_imu_data = fifo_pop_imu(&imu_buffer,&orientation);
@@ -83,18 +80,18 @@ void flight_control(void)  {
         for (int i=0; i<4; i++) {
             motor_speeds[i] = force_translator(force[i]);
         }
-        set_motors(motor_speeds[0], motor_speeds[1], motor_speeds[2], motor_speeds[3]);
+        //set_motors(motor_speeds[0], motor_speeds[1], motor_speeds[2], motor_speeds[3]);
 
         printf(">AngleX: %f\n",orientation.angle[0]);
         printf(">AngleY: %f\n",orientation.angle[1]);
         printf(">AngleZ: %f\n",orientation.angle[2]);
-        //printf(">AccelX: %f\n",orientation.acc_x);
-        //printf(">AccelY: %f\n",orientation.acc_y);
-        //printf(">AccelZ: %f\n",orientation.acc_z);
-        //printf(">GyroX: %f\n",orientation.gyro_x);
-        //printf(">GyroY: %f\n",orientation.gyro_y);
-        //printf(">GyroZ: %f\n",orientation.gyro_z);
+        // printf(">AccelX: %f\n",orientation.accel[0]);
+        // printf(">AccelY: %f\n",orientation.accel[1]);
+        // printf(">AccelZ: %f\n",orientation.accel[2]);
+        // printf(">GyroX: %f\n",orientation.gyro[0]);
+        // printf(">GyroY: %f\n",orientation.gyro[1]);
+        // printf(">GyroZ: %f\n",orientation.gyro[2]);
 
-        //printf(">Altitude: %hu\n", grid_choice(&orientation, distance_meas));
+        printf(">Altitude: %hu\n", grid_choice(&orientation, distance_meas));
     }
 }    

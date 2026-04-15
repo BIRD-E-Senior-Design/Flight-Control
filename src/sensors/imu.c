@@ -139,12 +139,13 @@ void reset_imu() {
     gpio_put(PIN_IMU_ADR, true); //Sets default I2C address
     gpio_put(PIN_IMU_PS0, false); //PS0,PS1 = 0,0 -> I2C interface enabled
     gpio_put(PIN_IMU_PS1, false);
+    gpio_put(PIN_IMU_STATUS_LED, true);
     sleep_ms(50);
 
     //Reset Loop
     int method = 0;
 
-    while (true) { 
+    while (true) {
         #ifdef LOG_MODE_0
             printf("Attempting reset with method %d\n", method);
         #endif

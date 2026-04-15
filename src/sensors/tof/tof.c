@@ -102,6 +102,9 @@ void init_tof() {
     gpio_set_dir(PIN_TOF_LPN, true);
     gpio_set_dir(PIN_TOF_I2C_RST, true);
     gpio_set_dir(PIN_TOF_STATUS_LED,true);
+
+    gpio_put(PIN_TOF_I2C_RST, false);
+    gpio_put(PIN_TOF_STATUS_LED, true);
     
     //2.
     reset_tof();
