@@ -2,6 +2,9 @@
 #define MOTORS_H
 
 //PUBLIC API
+#define MOTOR_BASELINE 1000
+#define MOTOR_MAX 2000
+
 void init_pwm_motor(void);
 
 void motor_init_sequence();

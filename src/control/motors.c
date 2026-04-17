@@ -12,7 +12,6 @@
 #define CHAN_RIGHT 1
 
 #define MOTOR_PWM_PERIOD_MS 2
-#define MOTOR_BASELINE 0
 
 void init_pwm_motor(void) {
     #ifdef LOG_MODE_0
@@ -98,6 +97,6 @@ void set_motors(int fl, int bl, int fr, int br) {
 //constrained force to throttle % calculator
 uint16_t force_translator(float f) {
     uint16_t throttle = -0.00745 * pow(f,2) + 5.702989 * f;
-    return (uint16_t)fmax(fmin(throttle,2000),1000);
+    return (uint16_t)fmax(fmin(throttle,MOTOR_MAX),MOTOR_BASELINE);
 }
 

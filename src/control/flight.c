@@ -7,14 +7,14 @@
 #define d3 0.09 //meters
 #define c 0.1 //no unit
 #define Y 5 //degrees
-#define A 0.02 //meters
+#define A 20 //millimeters
 #define T 500000 //microseconds
 #define dt 0.01 //seconds
 #define alpha 0.9 //no unit
 #define roll_max 10.0 //degrees
 #define pitch_max 10.0 //degrees
 #define k_decay 0.95 //no unit
-#define THRUST_HOVER 300 //grams (?)
+#define THRUST_HOVER 250 //grams (?)
 
 const float K_inv[4][4] = 
 {{-d2/(2*(-d1-d2)), -1/(2*(-d1-d2)), 1/(4*d3), -1/(4*c)},

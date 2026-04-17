@@ -11,9 +11,13 @@
 #include "sensors/altimeter.h"
 #include "config.h"
 
+#define TAKEOFF_ALTITUDE_MM 1830
+#define LANDING_ALTITUDE_MM 10
+
 //Core 1 Local Sensor Data
 imu_measurement orientation;
 uint16_t distance_meas[16];
+cmd_t current_cmd;
 
 //Attitude Control State
 float target_angle[3] = {0, 0, 0};
@@ -41,6 +45,22 @@ uint16_t motor_speeds[4];
 //Data Gathering
 bool new_imu_data = false;
 bool new_tof_data = false;
+bool new_cmd_data = false;
+
+//State Management
+enum state_t system_state = NORMAL;
+
+static void update_state() {
+    if (current_cmd.id == SHUTDOWN) {
+        system_state = OFF;
+    }
+    else if (current_cmd.id == STARTUP) {
+        system_state = TAKEOFF;
+    }
+    else if (current_cmd.id == DESCEND) {
+        system_state = LANDING;
+    }
+}
 
 void flight_control(void)  {
     for (;;) {
@@ -50,17 +70,55 @@ void flight_control(void)  {
             new_tof_data = fifo_pop_tof(&tof_buffer,distance_meas);
         } while(!new_imu_data && !new_tof_data);
 
-        //Check for commands
-        //fifo_pop_cmd();
-
-        //Calculate Current Altitude and Linear Velocity
+        //Calculate Current Drone Status
         current_altitude = grid_choice(&orientation, distance_meas);
         linear_velocity = linear_velo_fuse(prev_altitude, current_altitude, orientation.accel[2]);
 
-        //Set Target State
-        att_target_set(target_angle, new_cmd_tilt, cmd_tilt, timer0_hw->timerawl);
-        alt_target_set(&target_altitude, new_cmd_altitude, cmd_altitude);
+//---------------------- STATE MACHINE -------------------------
+        //Shutdown, error, landing finished, etc.
+        if (system_state == OFF) { 
+            set_motors(MOTOR_BASELINE,MOTOR_BASELINE,MOTOR_BASELINE,MOTOR_BASELINE);
+            return;
+        }
 
+        //Initial Ascension
+        else if (system_state == TAKEOFF) {
+            if (current_altitude < TAKEOFF_ALTITUDE_MM) {
+                for (int i=0; i<3; i++) {
+                    target_angle[i] = 0;
+                }
+                target_altitude = TAKEOFF_ALTITUDE_MM;
+            }
+            else {
+                system_state == NORMAL;
+            } 
+        }
+        
+        //Controlled Descent
+        else if (system_state == LANDING) {
+            if (current_altitude > LANDING_ALTITUDE_MM) {
+                for (int i=0; i<3; i++) {
+                    target_angle[i] = 0;
+                }
+                target_altitude = LANDING_ALTITUDE_MM;
+            }
+            else {
+                system_state = OFF;
+            }
+        }
+
+        //Normal Flight
+        else if (system_state == NORMAL) {
+            //Check for Commands & Update State Machine
+            fifo_pop_cmd(&cmd_buffer,&current_cmd);
+            update_state();
+
+            //Set Target State
+            att_target_set(target_angle, new_cmd_tilt, cmd_tilt, timer0_hw->timerawl);
+            alt_target_set(&target_altitude, new_cmd_altitude, cmd_altitude);
+        }
+
+// ----------------------- PID ---------------------------
         //Run Outer Loops
         attitude_outer_loop(target_angular_velocity, target_angle, orientation.angle);
         altitude_outer_loop(&target_linear_velocity, target_altitude, current_altitude);
@@ -80,18 +138,17 @@ void flight_control(void)  {
         for (int i=0; i<4; i++) {
             motor_speeds[i] = force_translator(force[i]);
         }
-        //set_motors(motor_speeds[0], motor_speeds[1], motor_speeds[2], motor_speeds[3]);
+        set_motors(motor_speeds[0], motor_speeds[1], motor_speeds[2], motor_speeds[3]);
 
-        printf(">AngleX: %f\n",orientation.angle[0]);
-        printf(">AngleY: %f\n",orientation.angle[1]);
-        printf(">AngleZ: %f\n",orientation.angle[2]);
-        // printf(">AccelX: %f\n",orientation.accel[0]);
-        // printf(">AccelY: %f\n",orientation.accel[1]);
-        // printf(">AccelZ: %f\n",orientation.accel[2]);
-        // printf(">GyroX: %f\n",orientation.gyro[0]);
-        // printf(">GyroY: %f\n",orientation.gyro[1]);
-        // printf(">GyroZ: %f\n",orientation.gyro[2]);
-
-        printf(">Altitude: %hu\n", grid_choice(&orientation, distance_meas));
+        //printf(">AngleX: %f\n",orientation.angle[0]);
+        //printf(">AngleY: %f\n",orientation.angle[1]);
+        //printf(">AngleZ: %f\n",orientation.angle[2]);
+        //printf(">AccelX: %f\n",orientation.accel[0]);
+        //printf(">AccelY: %f\n",orientation.accel[1]);
+        //printf(">AccelZ: %f\n",orientation.accel[2]);
+        //printf(">GyroX: %f\n",orientation.gyro[0]);
+        //printf(">GyroY: %f\n",orientation.gyro[1]);
+        //printf(">GyroZ: %f\n",orientation.gyro[2]);
+        //printf(">Altitude: %hu\n", grid_choice(&orientation, distance_meas));
     }
 }    

@@ -72,4 +72,12 @@ typedef struct {
     mutex_t lock; 
 } alt_fifo_t; 
 
+//STATE MACHINE TYPES
+enum state_t {
+    NORMAL = 0,
+    OFF = 1,
+    TAKEOFF = 2,
+    LANDING = 3,
+};
+
 #endif
