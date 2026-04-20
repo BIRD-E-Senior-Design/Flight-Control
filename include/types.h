@@ -49,7 +49,8 @@ enum command {
     UP = 5,
     DOWN = 6,
     ROLL = 7,
-    PITCH = 8
+    PITCH = 8,
+    NONE = 9
 };
 
 typedef struct {

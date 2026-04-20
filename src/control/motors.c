@@ -76,8 +76,8 @@ void motor_init_sequence() {
         sleep_ms(50);
     }
 
-    //down to 1100 to turn motors off
-    for (int i=1200; i>1100;i-=10) {
+    //down to 1000 to turn motors off
+    for (int i=1200; i>990;i-=10) {
         set_motors(i,i,i,i);
         sleep_ms(50);
     }
@@ -96,7 +96,7 @@ void set_motors(int fl, int bl, int fr, int br) {
 
 //constrained force to throttle % calculator
 uint16_t force_translator(float f) {
-    uint16_t throttle = -0.00745 * pow(f,2) + 5.702989 * f;
+    uint16_t throttle = MOTOR_BASELINE + f;
     return (uint16_t)fmax(fmin(throttle,MOTOR_MAX),MOTOR_BASELINE);
 }
 

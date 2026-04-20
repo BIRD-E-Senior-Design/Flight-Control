@@ -4,7 +4,7 @@
 #include "types.h"
 
 //Target Setting
-void att_target_set(float target_state[3], bool new_cmd[3], float cmd[3], int current_time);
+void att_target_set(float target_state[3], float offset[3], bool new_cmd[3], float cmd[3], int current_time);
 void alt_target_set(float* target_alt, bool new_cmd, float cmd);
 
 //Attitude Cascading PID

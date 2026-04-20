@@ -23,7 +23,7 @@ bool fifo_push_tof(tof_fifo_t* fifo, uint16_t* val) {
     int next_tail = (fifo->tail + 1) & 7;
 
     mutex_enter_blocking(&fifo->lock);
-    if ((void*)next_tail == fifo->buffer) {
+    if (next_tail == fifo->head) {
         mutex_exit(&fifo->lock);
         return false;
     }

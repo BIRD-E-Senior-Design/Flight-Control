@@ -5,9 +5,10 @@
 #include "hardware/uart.h"
 
 void test_all_motors() {
-    int motor = 0;
-    int throttle = 1200;
+    int motor = 2;
+    int throttle = 1000;
     int esc_state = 0;
+    bool mode = false;
 
     while (1) {
         if (uart_is_readable(uart0)) {
@@ -19,18 +20,22 @@ void test_all_motors() {
                 if (ch == 'A') {
                     throttle += 25;
                     if (throttle > 2000) { throttle = 2000; }
-                    set_motors((motor==0) ? throttle : 1000, (motor==1) ? throttle : 1000, (motor==2) ? throttle : 1000, (motor==3) ? throttle : 1000);
+                    set_motors((motor==0 || mode) ? throttle : 1000, (motor==1 || mode) ? throttle : 1000, (motor==2 || mode) ? throttle : 1000, (motor==3 || mode) ? throttle : 1000);
                     printf("Throttle up: %d\n", throttle);
                 }
                 else if (ch == 'B') {
                     throttle -= 25;
                     if (throttle < 0) { throttle = 0; }
-                    set_motors((motor==0) ? throttle : 1000, (motor==1) ? throttle : 1000, (motor==2) ? throttle : 1000, (motor==3) ? throttle : 1000);
+                    set_motors((motor==0 || mode) ? throttle : 1000, (motor==1 || mode) ? throttle : 1000, (motor==2 || mode) ? throttle : 1000, (motor==3 || mode) ? throttle : 1000);
                     printf("Throttle down: %d\n", throttle);
                 }
-                else if (ch == 'C' || ch == 'D') {
+                else if (ch == 'C') {
                     motor = (motor + 1) % 4;
                     printf("Motor: %d\n", motor);
+                }
+                else if (ch == 'D') {
+                    mode = !mode;
+                    printf("mode: %d\n", mode);
                 }
                 esc_state = 0;
             } 

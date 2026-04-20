@@ -9,7 +9,7 @@
 //Globals
 cmd_fifo_t cmd_buffer;
 cmd_t temp_cmd = {
-    .id = SHUTDOWN,
+    .id = NONE,
     .frac = 0.0
 };
 int byte_num = 4;
@@ -21,7 +21,7 @@ static bool fifo_push(cmd_fifo_t* fifo, cmd_t val) {
     int next_tail = (fifo->tail + 1) & 7;
 
     mutex_enter_blocking(&fifo->lock);
-    if ((void*)next_tail == fifo->buffer) {
+    if (next_tail == fifo->head) {
         mutex_exit(&fifo->lock);
         return false;
     }
@@ -33,7 +33,9 @@ static bool fifo_push(cmd_fifo_t* fifo, cmd_t val) {
 }
 
 bool fifo_pop_cmd(cmd_fifo_t* fifo, cmd_t* dest) {
-    mutex_enter_blocking(&fifo->lock);
+    uint32_t owner;
+    if (!mutex_try_enter(&fifo->lock, &owner)) {return false;}
+
     if(fifo->head == fifo->tail) {
         mutex_exit(&fifo->lock);
         return false;
@@ -52,6 +54,7 @@ void parse_command() {
     uart1_hw->icr = UART_UARTICR_RXIC_BITS | UART_UARTICR_RTIC_BITS;
     while (uart_is_readable(uart1)) {
         received_byte = uart1_hw->dr & 0xff;
+        printf("Reveived cmd: %x\n", received_byte);
         
         //id bytes always received on byte num 4
         if (byte_num > 3) {
@@ -84,6 +87,7 @@ void init_rpz() {
     //pins
     gpio_set_function(PIN_RPZ_RX, GPIO_FUNC_UART);
     gpio_set_function(PIN_RPZ_TX, GPIO_FUNC_UART);
+    gpio_pull_up(PIN_RPZ_RX);
 
     //buffer
     cmd_buffer.head = 0;
