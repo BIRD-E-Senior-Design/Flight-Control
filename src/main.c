@@ -21,6 +21,7 @@ int main() {
 
     //MOTOR STARTUP
     init_pwm_motor();
+    sleep_ms(30000);
 
     //RUN ALL TESTS 
     force_test_individual(); 

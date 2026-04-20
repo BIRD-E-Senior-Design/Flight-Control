@@ -44,11 +44,11 @@ void init_pwm_motor(void) {
     #endif
 }
 
-void set_motors(int fl, int bl, int fr, int br) {
-    pwm_set_chan_level(SLICE_FRONT,CHAN_LEFT, fl);
-    pwm_set_chan_level(SLICE_FRONT,CHAN_RIGHT, fr); 
-    pwm_set_chan_level(SLICE_BACK,CHAN_LEFT, bl);
-    pwm_set_chan_level(SLICE_BACK,CHAN_RIGHT, br);
+void set_motors(int arm3, int arm4, int arm1, int arm2) {
+    pwm_set_chan_level(SLICE_FRONT,CHAN_LEFT, arm3);
+    pwm_set_chan_level(SLICE_FRONT,CHAN_RIGHT, arm4); 
+    pwm_set_chan_level(SLICE_BACK,CHAN_LEFT, arm1);
+    pwm_set_chan_level(SLICE_BACK,CHAN_RIGHT, arm2);
 }
 
 //constrained force to throttle % calculator
@@ -69,28 +69,28 @@ void force_test_individual(){
     printf("testing front left motors\n");
     for (int i=MOTOR_BASELINE; i<MOTOR_WRAP_VALUE; i+=FORCE_TEST_INCREMENT) {
         set_motors(i, MOTOR_BASELINE, MOTOR_BASELINE, MOTOR_BASELINE);
-        sleep_ms(10);
+        sleep_ms(1000);
     }
     pause_motors();
 
     printf("testing front right motors\n");
     for (int i=MOTOR_BASELINE; i<MOTOR_WRAP_VALUE; i+=FORCE_TEST_INCREMENT) {
         set_motors(MOTOR_BASELINE, i , MOTOR_BASELINE, MOTOR_BASELINE);
-        sleep_ms(10);
+        sleep_ms(1000);
     }
     pause_motors(); 
 
     printf("testing back left motors\n");
     for (int i=MOTOR_BASELINE; i<MOTOR_WRAP_VALUE; i+=FORCE_TEST_INCREMENT) {
         set_motors(MOTOR_BASELINE, MOTOR_BASELINE, i, MOTOR_BASELINE);
-        sleep(10);
+        sleep_ms(1000);
     }
     pause_motors(); 
 
     printf("testing back left motors\n");
     for (int i=MOTOR_BASELINE; i<MOTOR_WRAP_VALUE; i+=FORCE_TEST_INCREMENT) {
         set_motors(MOTOR_BASELINE, MOTOR_BASELINE, MOTOR_BASELINE, i);
-        sleep(10); 
+        sleep_ms(1000); 
     }
     pause_motors();
 }
@@ -100,15 +100,15 @@ void force_test_pairs() {
     
     printf("testing front left + back right motors\n");
     for (int i=MOTOR_BASELINE; i<MOTOR_WRAP_VALUE; i+=FORCE_TEST_INCREMENT) {
-        set_motors(i, MOTOR_BASELINE, MOTOR_BASELINE, i);
-        sleep(10);
+        set_motors(i, MOTOR_BASELINE, i, MOTOR_BASELINE);
+        sleep_ms(1000);
     }
     pause_motors();
 
     printf("testing front right + back left motors\n");
     for (int i=MOTOR_BASELINE; i<MOTOR_WRAP_VALUE; i+=FORCE_TEST_INCREMENT) {
-        set_motors(MOTOR_BASELINE, i, i, MOTOR_BASELINE);
-        sleep(10);
+        set_motors(MOTOR_BASELINE, i, MOTOR_BASELINE, i);
+        sleep_ms(1000);
     }
     pause_motors();
 }
@@ -116,7 +116,7 @@ void force_test_pairs() {
 void force_test_all(){
     for(int i=MOTOR_BASELINE; i<MOTOR_WRAP_VALUE; i+=FORCE_TEST_INCREMENT) {
         set_motors(i, i, i, i);
-        sleep(10);
+        sleep_ms(1000);
     }
     pause_motors(); 
 }
