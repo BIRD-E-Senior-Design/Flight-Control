@@ -12,6 +12,7 @@
 #include "test/motor_test.h"
 #include "config.h"
 
+
 int main() {
     //UART INIT FOR LOGGING
     stdio_init_all();
@@ -19,12 +20,6 @@ int main() {
     //UART INIT FOR USER CMDS
     uart_init(uart1, 115200); //standard UART baud rate
     uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
-
-    //WAIT FOR STARTUP CMD
-    // cmd_t local_cmd;
-    // do {
-    //     fifo_pop_cmd(&cmd_buffer,&local_cmd);
-    // } while (local_cmd.id != STARTUP);
 
     //IMU, ALTIMETER COMMS SETUP
     i2c_init(i2c1, 400000); //400 KHz: i2c fast mode
@@ -36,12 +31,18 @@ int main() {
     gpio_set_function(PIN_I2C0_SCL, GPIO_FUNC_I2C);
     gpio_set_function(PIN_I2C0_SDA, GPIO_FUNC_I2C);
 
+    //WAIT FOR STARTUP CMD
+    // cmd_t local_cmd;
+    // do {
+    //     fifo_pop_cmd(&cmd_buffer,&local_cmd);
+    // } while (local_cmd.id != STARTUP);
+
     //SENSOR BOOT
     #ifdef LOG_MODE_0
         printf("SENSOR BOOT...\n\n");
     #endif
     init_imu();
-    //init_tof();
+    init_tof();
     init_rpz();
 
     //MOTOR STARTUP
@@ -49,12 +50,11 @@ int main() {
     motor_init_sequence();
 
     //OPTIONAL TEST SCRIPTS
-    test_all_motors();
-    //flash_test();
+    //test_all_motors();
 
     //POLLING START
     start_polling_imu();
-    //start_polling_tof();
+    start_polling_tof();
 
     //launch second core
     multicore_launch_core1(flight_control);
@@ -63,6 +63,13 @@ int main() {
     uint32_t int_status;
 
     for (;;) {
+        if (system_state == OFF) {
+            do {
+                fifo_pop_cmd(&cmd_buffer,&local_cmd);
+            } while (local_cmd.id != STARTUP);
+
+            system_state = TAKEOFF;
+        }
         //disable interrupts before i2c transactions
         int_status = save_and_disable_interrupts();
 

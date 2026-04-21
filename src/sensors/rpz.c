@@ -15,7 +15,6 @@ cmd_t temp_cmd = {
 int byte_num = 4;
 uint8_t byte_buffer[4];
 
-
 //BUFFER INTERFACE
 static bool fifo_push(cmd_fifo_t* fifo, cmd_t val) {
     int next_tail = (fifo->tail + 1) & 7;
