@@ -3,7 +3,7 @@
 #include "sensors/rpz.h"
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
-#include "pico/mutex.h"
+#include "pico/critical_section.h"
 #include "config.h"
 
 //Globals
@@ -19,29 +19,28 @@ uint8_t byte_buffer[4];
 static bool fifo_push(cmd_fifo_t* fifo, cmd_t val) {
     int next_tail = (fifo->tail + 1) & 7;
 
-    mutex_enter_blocking(&fifo->lock);
+    critical_section_enter_blocking(&fifo->lock);
     if (next_tail == fifo->head) {
-        mutex_exit(&fifo->lock);
+        critical_section_exit(&fifo->lock);
         return false;
     }
     fifo->buffer[fifo->tail] = val; 
     fifo->tail = next_tail;
-    mutex_exit(&fifo->lock);
+    critical_section_exit(&fifo->lock);
     //this means buffer is full and math has stopped running, bad
     return true;
 }
 
 bool fifo_pop_cmd(cmd_fifo_t* fifo, cmd_t* dest) {
-    uint32_t owner;
-    if (!mutex_try_enter(&fifo->lock, &owner)) {return false;}
-
+    
+    critical_section_enter_blocking(&fifo->lock);
     if(fifo->head == fifo->tail) {
-        mutex_exit(&fifo->lock);
+        critical_section_exit(&fifo->lock);
         return false;
     }
     *dest = fifo->buffer[fifo->head];
     fifo->head = (fifo->head + 1) & 7;
-    mutex_exit(&fifo->lock);
+    critical_section_exit(&fifo->lock);
     //buffer is empty, not so bad
     return true;  
 }
@@ -61,7 +60,7 @@ void parse_command() {
                 byte_num--;
             }
             else {
-                printf("Reveived cmd: %x, %f\n", temp_cmd.id, temp_cmd.frac);
+                printf("Reveived cmd: %d, %f\n", temp_cmd.id, temp_cmd.frac);
                 fifo_push(&cmd_buffer,temp_cmd);
             }
         }
@@ -91,7 +90,7 @@ void init_rpz() {
     //buffer
     cmd_buffer.head = 0;
     cmd_buffer.tail = 0;
-    mutex_init(&cmd_buffer.lock);
+    critical_section_init(&cmd_buffer.lock);
 
     //flush uart1 rx buffer
     while (uart_is_readable(uart1)) {

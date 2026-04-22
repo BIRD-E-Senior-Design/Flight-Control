@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include "pico/mutex.h"
+#include "pico/critical_section.h"
 
 //IMU TYPES
 typedef struct {
@@ -62,7 +63,7 @@ typedef struct {
     volatile cmd_t buffer[8];
     volatile int head; 
     volatile int tail; 
-    mutex_t lock; 
+    critical_section_t lock; 
 } cmd_fifo_t; 
 
 //ALT TYPES 
