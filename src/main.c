@@ -20,34 +20,30 @@ int main() {
     //UART INIT FOR USER CMDS
     uart_init(uart1, 115200); //standard UART baud rate
     uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
+    init_rpz();
 
-    //IMU, ALTIMETER COMMS SETUP
+    //WAIT FOR STARTUP CMD
+    printf("Waiting for Startup...\n");
+    cmd_t local_cmd;
+    do {
+        fifo_pop_cmd(&cmd_buffer,&local_cmd);
+    } while (local_cmd.id != STARTUP);
+
+    //IMU BOOT
     i2c_init(i2c1, 400000); //400 KHz: i2c fast mode
     gpio_set_function(PIN_I2C1_SDA, GPIO_FUNC_I2C);
     gpio_set_function(PIN_I2C1_SCL, GPIO_FUNC_I2C);
+    init_imu();
 
-    //TOF COMMS SETUP
+    //TOF BOOT
     i2c_init(i2c0, 1000000); //1MHz: i2c fast mode +
     gpio_set_function(PIN_I2C0_SCL, GPIO_FUNC_I2C);
     gpio_set_function(PIN_I2C0_SDA, GPIO_FUNC_I2C);
-
-    //WAIT FOR STARTUP CMD
-    // cmd_t local_cmd;
-    // do {
-    //     fifo_pop_cmd(&cmd_buffer,&local_cmd);
-    // } while (local_cmd.id != STARTUP);
-
-    //SENSOR BOOT
-    #ifdef LOG_MODE_0
-        printf("SENSOR BOOT...\n\n");
-    #endif
-    init_imu();
     init_tof();
-    init_rpz();
 
     //MOTOR STARTUP
     init_pwm_motor();
-    motor_init_sequence();
+    //motor_init_sequence();
 
     //OPTIONAL TEST SCRIPTS
     //test_all_motors();
@@ -56,13 +52,15 @@ int main() {
     start_polling_imu();
     start_polling_tof();
 
-    //launch second core
+    //LAUNCH CORE 1
+    printf("Core 1 Launched...\n");
     multicore_launch_core1(flight_control);
 
-    //Normal Operation
+    //RUN
     uint32_t int_status;
 
     for (;;) {
+        //WAIT FOR RESTART COMMAND
         if (system_state == OFF) {
             do {
                 fifo_pop_cmd(&cmd_buffer,&local_cmd);
@@ -70,9 +68,9 @@ int main() {
 
             system_state = TAKEOFF;
         }
-        //disable interrupts before i2c transactions
-        int_status = save_and_disable_interrupts();
 
+        //GATHER DATA
+        int_status = save_and_disable_interrupts();
         if (imu_data_ready) {
             imu_data_ready = false;
             read_imu();

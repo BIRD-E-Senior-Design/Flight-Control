@@ -3,20 +3,20 @@
       {
          "type": "chart",
          "gridPos": {
-            "h": 5,
+            "h": 4,
             "w": 3,
             "x": 0,
             "y": 0
          },
          "series": [
             {
-               "name": "Motor2",
+               "name": "BR",
                "sourceNames": [
-                  "Motor2"
+                  "BR"
                ],
                "formula": "",
                "options": {
-                  "_serie": "Motor2",
+                  "_serie": "BR",
                   "_id": "data-serie-0",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
@@ -28,20 +28,20 @@
       {
          "type": "chart",
          "gridPos": {
-            "h": 5,
+            "h": 4,
             "w": 3,
             "x": 0,
             "y": 0
          },
          "series": [
             {
-               "name": "Motor3",
+               "name": "FL",
                "sourceNames": [
-                  "Motor3"
+                  "FL"
                ],
                "formula": "",
                "options": {
-                  "_serie": "Motor3",
+                  "_serie": "FL",
                   "_id": "data-serie-1",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
@@ -53,20 +53,20 @@
       {
          "type": "chart",
          "gridPos": {
-            "h": 5,
+            "h": 4,
             "w": 3,
             "x": 0,
             "y": 0
          },
          "series": [
             {
-               "name": "Motor4",
+               "name": "BL",
                "sourceNames": [
-                  "Motor4"
+                  "BL"
                ],
                "formula": "",
                "options": {
-                  "_serie": "Motor4",
+                  "_serie": "BL",
                   "_id": "data-serie-2",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
@@ -78,8 +78,33 @@
       {
          "type": "chart",
          "gridPos": {
-            "h": 5,
+            "h": 4,
             "w": 3,
+            "x": 0,
+            "y": 0
+         },
+         "series": [
+            {
+               "name": "FR",
+               "sourceNames": [
+                  "FR"
+               ],
+               "formula": "",
+               "options": {
+                  "_serie": "FR",
+                  "_id": "data-serie-6",
+                  "stroke": "rgba(231,76,60,1)",
+                  "fill": "rgba(231,76,60,0.1)"
+               },
+               "type": "number"
+            }
+         ]
+      },
+      {
+         "type": "chart",
+         "gridPos": {
+            "h": 4,
+            "w": 6,
             "x": 0,
             "y": 0
          },
@@ -92,7 +117,7 @@
                "formula": "",
                "options": {
                   "_serie": "AngleX",
-                  "_id": "data-serie-3",
+                  "_id": "data-serie-7",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
                },
@@ -104,7 +129,7 @@
          "type": "chart",
          "gridPos": {
             "h": 4,
-            "w": 3,
+            "w": 6,
             "x": 0,
             "y": 0
          },
@@ -117,7 +142,7 @@
                "formula": "",
                "options": {
                   "_serie": "AngleY",
-                  "_id": "data-serie-4",
+                  "_id": "data-serie-8",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
                },
@@ -129,7 +154,7 @@
          "type": "chart",
          "gridPos": {
             "h": 4,
-            "w": 3,
+            "w": 6,
             "x": 0,
             "y": 0
          },
@@ -142,32 +167,7 @@
                "formula": "",
                "options": {
                   "_serie": "AngleZ",
-                  "_id": "data-serie-5",
-                  "stroke": "rgba(231,76,60,1)",
-                  "fill": "rgba(231,76,60,0.1)"
-               },
-               "type": "number"
-            }
-         ]
-      },
-      {
-         "type": "chart",
-         "gridPos": {
-            "h": 4,
-            "w": 3,
-            "x": 0,
-            "y": 0
-         },
-         "series": [
-            {
-               "name": "Motor1",
-               "sourceNames": [
-                  "Motor1"
-               ],
-               "formula": "",
-               "options": {
-                  "_serie": "Motor1",
-                  "_id": "data-serie-6",
+                  "_id": "data-serie-9",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
                },

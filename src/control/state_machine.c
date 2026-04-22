@@ -11,8 +11,9 @@
 #include "sensors/altimeter.h"
 #include "config.h"
 
-#define TAKEOFF_ALTITUDE_MM 1830
+#define TAKEOFF_ALTITUDE_MM 1000
 #define LANDING_ALTITUDE_MM 10
+#define GYRO_ALPHA 0.2
 
 //Core 1 Local Sensor Data
 imu_measurement orientation;
@@ -28,6 +29,7 @@ float target_angle[3] = {0, 0, 0};
 float target_angular_velocity[3];
 float cmd_tilt[3] = {0, 0, 0};
 bool new_cmd_tilt[3] = {false, false, false};
+float filtered_gyro[3] = {0.0, 0.0, 0.0};
 
 //Altitude Control State
 float target_altitude = 1;
@@ -58,10 +60,10 @@ static void update_state() {
     if (current_cmd.id == SHUTDOWN) {
         system_state = OFF;
     }
-    else if (current_cmd.id == STARTUP) {
+    else if (current_cmd.id == STARTUP && system_state == OFF) {
         system_state = TAKEOFF;
     }
-    else if (current_cmd.id == DESCEND) {
+    else if (current_cmd.id == DESCEND && system_state == NORMAL) {
         system_state = LANDING;
     }
 }
@@ -81,23 +83,23 @@ static void set_baseline_targets() {
 }
 
 static void log_motors() {
-    printf(">Motor1: %d\n", motor_speeds[0]);
-    printf(">Motor2: %d\n", motor_speeds[1]);
-    printf(">Motor3: %d\n", motor_speeds[2]);
-    printf(">Motor4: %d\n", motor_speeds[3]);
+    printf(">FR: %d\n", motor_speeds[0]);
+    printf(">BR: %d\n", motor_speeds[1]);
+    printf(">FL: %d\n", motor_speeds[2]);
+    printf(">BL: %d\n", motor_speeds[3]);
 }
 
 static void log_sensors() {
     printf(">AngleX: %f\n",orientation.angle[0]);
     printf(">AngleY: %f\n",orientation.angle[1]);
     printf(">AngleZ: %f\n",orientation.angle[2]);
-    printf(">AccelX: %f\n",orientation.accel[0]);
-    printf(">AccelY: %f\n",orientation.accel[1]);
-    printf(">AccelZ: %f\n",orientation.accel[2]);
-    printf(">GyroX: %f\n",orientation.gyro[0]);
-    printf(">GyroY: %f\n",orientation.gyro[1]);
-    printf(">GyroZ: %f\n",orientation.gyro[2]);
-    printf(">Altitude: %hu\n", grid_choice(&orientation, distance_meas));
+    // printf(">AccelX: %f\n",orientation.accel[0]);
+    // printf(">AccelY: %f\n",orientation.accel[1]);
+    // printf(">AccelZ: %f\n",orientation.accel[2]);
+    // printf(">GyroX: %f\n",orientation.gyro[0]);
+    // printf(">GyroY: %f\n",orientation.gyro[1]);
+    // printf(">GyroZ: %f\n",orientation.gyro[2]);
+    // printf(">Altitude: %hu\n", grid_choice(&orientation, distance_meas));
 }
 
 void flight_control(void)  {
@@ -120,7 +122,11 @@ void flight_control(void)  {
             system_state = OFF;
         }
 
-        printf("Current State: %d\n", system_state);
+        //CHECK FOR COMMANDS & UPDATE STATE
+        if (fifo_pop_cmd(&cmd_buffer, &current_cmd)) {
+            update_state();
+        }
+        
         //STATE MACHINE
         if (system_state == OFF) { 
             set_motors(MOTOR_BASELINE,MOTOR_BASELINE,MOTOR_BASELINE,MOTOR_BASELINE);
@@ -144,30 +150,27 @@ void flight_control(void)  {
             }
             else {system_state = OFF;}
         }
-        else {
-            //CHECK FOR COMMANDS
-            // if (fifo_pop_cmd(&cmd_buffer, &current_cmd)) {
-            //     update_state();
-            // }
-
-            //SET TARGET STATE
+        else if (system_state == NORMAL){
             att_target_set(target_angle,offset_angle,new_cmd_tilt,cmd_tilt,timer0_hw->timerawl);
             alt_target_set(&target_altitude,new_cmd_altitude,cmd_altitude);
         }
 
-        //ATTITUDE CONTROL
+        //ATTITUDE CONTROL & GYRO EMA
         attitude_outer_loop(target_angular_velocity,target_angle,orientation.angle);
-        attitude_inner_loop(torque,target_angular_velocity,orientation.gyro);
+        for (int i=0; i<3; i++) {
+            filtered_gyro[i] = (GYRO_ALPHA * orientation.gyro[i]) + ((1.0 - GYRO_ALPHA) * filtered_gyro[i]);
+        }
+        attitude_inner_loop(torque,target_angular_velocity,filtered_gyro);
 
         //ALTITUDE CONTROL
         //altitude_outer_loop(&target_linear_velocity,target_altitude,current_altitude);    
         //altitude_inner_loop(&f_total,target_linear_velocity,linear_velocity);
-        f_total = 1000;
+        f_total = 2.94;
 
         //MOTOR MIXER
         S[0] = f_total;
-        S[1] = torque[2];
-        S[2] = torque[1];
+        S[1] = torque[1];
+        S[2] = torque[2];
         S[3] = torque[0];
         motor_mixer(force,S);
 
@@ -175,9 +178,10 @@ void flight_control(void)  {
         for (int i=0; i<4; i++) {
             motor_speeds[i] = force_translator(force[i]);
         }
-        set_motors(motor_speeds[0], motor_speeds[1], motor_speeds[2], motor_speeds[3]);
-    }
+        //set_motors(motor_speeds[0], motor_speeds[1], motor_speeds[2], motor_speeds[3]);
 
-    log_motors();
-    //log_sensors();
+        //printf(">State: %d\n", system_state);
+        log_motors();
+        log_sensors();
+    }
 }    

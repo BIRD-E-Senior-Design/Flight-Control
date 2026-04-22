@@ -5,14 +5,14 @@
 #define d1 0.07 //meters
 #define d2 0.08 //meters
 #define d3 0.09 //meters
-#define c 0.1 //no unit
+#define c 0.0122 //Thrust (N) -> torque (N*m) ratio
 #define Y 5 //degrees
 #define A 20 //millimeters
 #define T 500000 //microseconds
 #define dt 0.01 //seconds
 #define alpha 0.9 //no unit
 #define k_decay 0.95 //no unit
-#define THRUST_HOVER 300 //grams (?)
+#define THRUST_HOVER 2.94 // Newtons
 
 const float K_inv[4][4] = 
 {{-d2/(2*(-d1-d2)), -1/(2*(-d1-d2)), 1/(4*d3), -1/(4*c)},
@@ -20,9 +20,9 @@ const float K_inv[4][4] =
 {d2/(2*(d1+d2)), -1/(2*(-d1-d2)), -1/(4*d3), 1/(4*c)},
 {-d1/(2*(-d1-d2)), 1/(2*(-d1-d2)), -1/(4*d3), -1/(4*c)}};
 
-const float kp_outer_att[3] = {1.5, 1.5, 1.5};
-const float kp_inner_att[3] = {1.5, 1.5, 1.5};
-const float ki_inner_att[3] = {0.01, 0.01, 0.01};
+const float kp_outer_att[3] = {0.25, 1.5, 1.5};
+const float kp_inner_att[3] = {0.01, 0.01, 0.01};
+const float ki_inner_att[3] = {0, 0, 0};
 
 const float kp_outer_alt = 1;
 const float kp_inner_alt = 0;
@@ -32,7 +32,7 @@ float integral_e_att[3] = {0, 0, 0};
 float integral_e_alt = 0;
 float integral_acc_alt = 0;
 
-int last_cmd[2] = {0, 0};
+uint last_cmd[2] = {0, 0};
 float tilt_max[2] = {10.0, 10.0};
 
 void motor_mixer(float f[4], float S[4]) {
@@ -74,7 +74,6 @@ uint16_t grid_choice(imu_measurement* orientation, uint16_t* distance) {
         }
         else {roll_nadir = 3;}
     }
-    //need to add in corrections if tilted past 22.5 degrees in any direction
     return distance[pitch_nadir + roll_nadir];
 }
 
@@ -118,7 +117,7 @@ float linear_velo_fuse(float prev_position, float cur_position, float accelerati
     return alpha*integral_acc_alt + (1-alpha) * (prev_position - cur_position) * (2 * dt);
 }
 
-void att_target_set(float target_state[3], float offset[3], bool new_cmd[3], float cmd[3], int current_time) {
+void att_target_set(float target_state[3], float offset[3], bool new_cmd[3], float cmd[3], uint current_time) {
     //yaw
     target_state[0] = target_state[0] + (new_cmd[0] ? cmd[0]*Y : 0);
 

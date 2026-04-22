@@ -53,7 +53,6 @@ void parse_command() {
     uart1_hw->icr = UART_UARTICR_RXIC_BITS | UART_UARTICR_RTIC_BITS;
     while (uart_is_readable(uart1)) {
         received_byte = uart1_hw->dr & 0xff;
-        printf("Reveived cmd: %x\n", received_byte);
         
         //id bytes always received on byte num 4
         if (byte_num > 3) {
@@ -62,6 +61,7 @@ void parse_command() {
                 byte_num--;
             }
             else {
+                printf("Reveived cmd: %x, %f\n", temp_cmd.id, temp_cmd.frac);
                 fifo_push(&cmd_buffer,temp_cmd);
             }
         }
@@ -92,6 +92,11 @@ void init_rpz() {
     cmd_buffer.head = 0;
     cmd_buffer.tail = 0;
     mutex_init(&cmd_buffer.lock);
+
+    //flush uart1 rx buffer
+    while (uart_is_readable(uart1)) {
+        uart_getc(uart1); 
+    }
 
     //interrupt
     uart_set_irqs_enabled(uart1, true, false);

@@ -75,8 +75,8 @@ typedef struct {
 
 //STATE MACHINE TYPES
 enum state_t {
-    NORMAL = 0,
-    OFF = 1,
+    OFF = 0,
+    NORMAL = 1,
     TAKEOFF = 2,
     LANDING = 3,
 };

@@ -6,11 +6,6 @@
 #include "config.h"
 
 //CONSTANTS
-#define SLICE_FRONT 8
-#define SLICE_BACK 9
-#define CHAN_LEFT 0
-#define CHAN_RIGHT 1
-
 #define MOTOR_PWM_PERIOD_MS 2
 
 void init_pwm_motor(void) {
@@ -25,15 +20,15 @@ void init_pwm_motor(void) {
     gpio_set_function(PIN_MOTOR4, GPIO_FUNC_PWM);
 
     //slice setup 
-    pwm_hw->slice[SLICE_FRONT].div = 150 << 4; //1MHz tick speed
-    pwm_hw->slice[SLICE_FRONT].top = (MOTOR_PWM_PERIOD_MS*1000)-1; //wrap value of 2,000, combined with tick speed makes 500Hz frequency
-    pwm_hw->slice[SLICE_FRONT].cc = MOTOR_BASELINE; //default off
-    pwm_hw->slice[SLICE_FRONT].csr = 0x1; //enable pwm
+    pwm_hw->slice[8].div = 150 << 4; //1MHz tick speed
+    pwm_hw->slice[8].top = (MOTOR_PWM_PERIOD_MS*1000)-1; //wrap value of 2,000, combined with tick speed makes 500Hz frequency
+    pwm_hw->slice[8].cc = MOTOR_BASELINE; //default off
+    pwm_hw->slice[8].csr = 0x1; //enable pwm
     
-    pwm_hw->slice[SLICE_BACK].div = 150 << 4; 
-    pwm_hw->slice[SLICE_BACK].top = (MOTOR_PWM_PERIOD_MS*1000)-1; 
-    pwm_hw->slice[SLICE_BACK].cc = MOTOR_BASELINE; 
-    pwm_hw->slice[SLICE_BACK].csr = 0x1; 
+    pwm_hw->slice[9].div = 150 << 4; 
+    pwm_hw->slice[9].top = (MOTOR_PWM_PERIOD_MS*1000)-1; 
+    pwm_hw->slice[9].cc = MOTOR_BASELINE; 
+    pwm_hw->slice[9].csr = 0x1; 
 
     #ifdef LOG_MODE_0
         printf("PWM Setup Complete\n\n");
@@ -87,16 +82,18 @@ void motor_init_sequence() {
     #endif
 }
 
-void set_motors(int fl, int bl, int fr, int br) {
-    pwm_set_chan_level(SLICE_FRONT,CHAN_LEFT, fl);
-    pwm_set_chan_level(SLICE_FRONT,CHAN_RIGHT, fr); 
-    pwm_set_chan_level(SLICE_BACK,CHAN_LEFT, bl);
-    pwm_set_chan_level(SLICE_BACK,CHAN_RIGHT, br);
+//front left, back right, back left, front right
+//9A->front left, 8B->front right, 8A->back right, 9B->back left
+void set_motors(int fr, int br, int fl, int bl) {
+    pwm_set_chan_level(8, 1, fr);
+    pwm_set_chan_level(8, 0, br); 
+    pwm_set_chan_level(9, 0, fl);
+    pwm_set_chan_level(9, 1, bl);
 }
 
 //constrained force to throttle % calculator
 uint16_t force_translator(float f) {
-    uint16_t throttle = MOTOR_BASELINE + f;
-    return (uint16_t)fmax(fmin(throttle,MOTOR_MAX),MOTOR_BASELINE);
+    if (f < 0.0) f = 0.0;
+    uint16_t throttle = MOTOR_BASELINE + 658.89 * powf(f, 0.4734);
+    return (uint16_t) fmin(throttle,MOTOR_MAX);
 }
-
