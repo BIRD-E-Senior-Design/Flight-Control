@@ -11,8 +11,8 @@
 #include "sensors/altimeter.h"
 #include "config.h"
 
-#define TAKEOFF_ALTITUDE_MM 1000
-#define LANDING_ALTITUDE_MM 10
+#define TAKEOFF_ALTITUDE_MM 50
+#define LANDING_ALTITUDE_MM 18
 #define GYRO_ALPHA 0.2
 
 //Core 1 Local Sensor Data
@@ -51,10 +51,48 @@ uint16_t motor_speeds[4];
 //Data Gathering
 bool new_imu_data = false;
 bool new_tof_data = false;
-bool new_cmd_data = false;
 
 //State Management
 enum state_t system_state = NORMAL;
+
+static void update_command() {
+    new_cmd_altitude = false;
+    for (int i=0; i<3; i++) {
+        new_cmd_tilt[i] = false;
+    }
+
+    switch (current_cmd.id) {
+        case TURN_LEFT:
+            cmd_tilt[0] = -1;
+            new_cmd_tilt[0] = true;
+            break;
+        case TURN_RIGHT:
+            cmd_tilt[0] = 1;
+            new_cmd_tilt[0] = true;
+            break;
+        case PITCH:
+            cmd_tilt[1] = current_cmd.frac;
+            new_cmd_tilt[1] = true;
+            break;
+        case ROLL:
+            cmd_tilt[2] = current_cmd.frac;
+            new_cmd_tilt[2] = true;
+            break;
+        case UP:
+            cmd_altitude = 1;
+            new_cmd_altitude = true;
+            break;
+        case DOWN: 
+            cmd_altitude = -1;
+            new_cmd_altitude = true;
+            break;
+        case SHUTDOWN: 
+        case STARTUP:
+        case DESCEND: 
+        default: 
+            break;
+    }
+}
 
 static void update_state() {
     if (current_cmd.id == SHUTDOWN) {
@@ -99,7 +137,7 @@ static void log_sensors() {
     // printf(">GyroX: %f\n",orientation.gyro[0]);
     // printf(">GyroY: %f\n",orientation.gyro[1]);
     // printf(">GyroZ: %f\n",orientation.gyro[2]);
-    // printf(">Altitude: %hu\n", grid_choice(&orientation, distance_meas));
+    printf(">Altitude: %hu\n", grid_choice(&orientation, distance_meas));
 }
 
 void flight_control(void)  {
@@ -125,17 +163,18 @@ void flight_control(void)  {
         //CHECK FOR COMMANDS & UPDATE STATE
         if (fifo_pop_cmd(&cmd_buffer, &current_cmd)) {
             update_state();
+            update_command();
         }
         
         //STATE MACHINE
         if (system_state == OFF) { 
             set_motors(MOTOR_BASELINE,MOTOR_BASELINE,MOTOR_BASELINE,MOTOR_BASELINE);
-            return;
+            continue;
         }
         else if (system_state == TAKEOFF) {
             if (current_altitude < TAKEOFF_ALTITUDE_MM) {
-                for (int i=0; i<3; i++) {
-                    target_angle[i] = 0;
+                for (int i=1; i<3; i++) {
+                    target_angle[i] = offset_angle[i];
                 }
                 target_altitude = TAKEOFF_ALTITUDE_MM;
             }
@@ -143,8 +182,8 @@ void flight_control(void)  {
         }
         else if (system_state == LANDING) {
             if (current_altitude > LANDING_ALTITUDE_MM) {
-                for (int i=0; i<3; i++) {
-                    target_angle[i] = 0;
+                for (int i=1; i<3; i++) {
+                    target_angle[i] = offset_angle[i];
                 }
                 target_altitude = LANDING_ALTITUDE_MM;
             }
@@ -163,9 +202,9 @@ void flight_control(void)  {
         attitude_inner_loop(torque,target_angular_velocity,filtered_gyro);
 
         //ALTITUDE CONTROL
-        //altitude_outer_loop(&target_linear_velocity,target_altitude,current_altitude);    
-        //altitude_inner_loop(&f_total,target_linear_velocity,linear_velocity);
-        f_total = 2.94;
+        altitude_outer_loop(&target_linear_velocity,target_altitude,current_altitude);    
+        altitude_inner_loop(&f_total,target_linear_velocity,linear_velocity);
+        printf(">F_total: %f\n", f_total);
 
         //MOTOR MIXER
         S[0] = f_total;
@@ -178,7 +217,7 @@ void flight_control(void)  {
         for (int i=0; i<4; i++) {
             motor_speeds[i] = force_translator(force[i]);
         }
-        //set_motors(motor_speeds[0], motor_speeds[1], motor_speeds[2], motor_speeds[3]);
+        set_motors(motor_speeds[0], motor_speeds[1], motor_speeds[2], motor_speeds[3]);
 
         //printf(">State: %d\n", system_state);
         log_motors();

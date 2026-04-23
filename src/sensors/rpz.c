@@ -60,7 +60,7 @@ void parse_command() {
                 byte_num--;
             }
             else {
-                printf("Reveived cmd: %d, %f\n", temp_cmd.id, temp_cmd.frac);
+                //printf("Reveived cmd: %d, %f\n", temp_cmd.id, temp_cmd.frac);
                 fifo_push(&cmd_buffer,temp_cmd);
             }
         }

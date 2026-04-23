@@ -22,13 +22,6 @@ int main() {
     uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
     init_rpz();
 
-    //WAIT FOR STARTUP CMD
-    printf("Waiting for Startup...\n");
-    cmd_t local_cmd;
-    do {
-        fifo_pop_cmd(&cmd_buffer,&local_cmd);
-    } while (local_cmd.id != STARTUP);
-
     //IMU BOOT
     i2c_init(i2c1, 400000); //400 KHz: i2c fast mode
     gpio_set_function(PIN_I2C1_SDA, GPIO_FUNC_I2C);
@@ -41,12 +34,21 @@ int main() {
     gpio_set_function(PIN_I2C0_SDA, GPIO_FUNC_I2C);
     init_tof();
 
+    //WAIT FOR STARTUP CMD
+    printf("Waiting for Startup...\n");
+    cmd_t local_cmd;
+    do {
+        fifo_pop_cmd(&cmd_buffer,&local_cmd);
+    } while (local_cmd.id != STARTUP);
+    local_cmd.id = NONE;
+
     //MOTOR STARTUP
     init_pwm_motor();
-    //motor_init_sequence();
+    motor_init_sequence();
 
     //OPTIONAL TEST SCRIPTS
     //test_all_motors();
+    //flash_test();
 
     //POLLING START
     start_polling_imu();
@@ -65,7 +67,7 @@ int main() {
             do {
                 fifo_pop_cmd(&cmd_buffer,&local_cmd);
             } while (local_cmd.id != STARTUP);
-
+            local_cmd.id = NONE;
             system_state = TAKEOFF;
         }
 

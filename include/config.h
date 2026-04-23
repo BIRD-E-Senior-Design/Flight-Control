@@ -8,8 +8,8 @@
 //  PINS
     #define PIN_I2C1_SDA 18 //I2C Buses
     #define PIN_I2C1_SCL 19
-    #define PIN_I2C0_SDA 28
-    #define PIN_I2C0_SCL 29
+    #define PIN_I2C0_SDA 12
+    #define PIN_I2C0_SCL 13
 
     #define PIN_IMU_HARD_RESET 22 //IMU
     #define PIN_IMU_RESET 23

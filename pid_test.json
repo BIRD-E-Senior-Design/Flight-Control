@@ -17,7 +17,7 @@
                "formula": "",
                "options": {
                   "_serie": "BR",
-                  "_id": "data-serie-0",
+                  "_id": "data-serie-97",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
                },
@@ -42,7 +42,7 @@
                "formula": "",
                "options": {
                   "_serie": "FL",
-                  "_id": "data-serie-1",
+                  "_id": "data-serie-98",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
                },
@@ -67,7 +67,7 @@
                "formula": "",
                "options": {
                   "_serie": "BL",
-                  "_id": "data-serie-2",
+                  "_id": "data-serie-99",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
                },
@@ -92,7 +92,7 @@
                "formula": "",
                "options": {
                   "_serie": "FR",
-                  "_id": "data-serie-6",
+                  "_id": "data-serie-100",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
                },
@@ -117,7 +117,7 @@
                "formula": "",
                "options": {
                   "_serie": "AngleX",
-                  "_id": "data-serie-7",
+                  "_id": "data-serie-101",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
                },
@@ -142,7 +142,7 @@
                "formula": "",
                "options": {
                   "_serie": "AngleY",
-                  "_id": "data-serie-8",
+                  "_id": "data-serie-102",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
                },
@@ -167,7 +167,57 @@
                "formula": "",
                "options": {
                   "_serie": "AngleZ",
-                  "_id": "data-serie-9",
+                  "_id": "data-serie-103",
+                  "stroke": "rgba(231,76,60,1)",
+                  "fill": "rgba(231,76,60,0.1)"
+               },
+               "type": "number"
+            }
+         ]
+      },
+      {
+         "type": "chart",
+         "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 0
+         },
+         "series": [
+            {
+               "name": "Altitude",
+               "sourceNames": [
+                  "Altitude"
+               ],
+               "formula": "",
+               "options": {
+                  "_serie": "Altitude",
+                  "_id": "data-serie-104",
+                  "stroke": "rgba(231,76,60,1)",
+                  "fill": "rgba(231,76,60,0.1)"
+               },
+               "type": "number"
+            }
+         ]
+      },
+      {
+         "type": "chart",
+         "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 0
+         },
+         "series": [
+            {
+               "name": "F_total",
+               "sourceNames": [
+                  "F_total"
+               ],
+               "formula": "",
+               "options": {
+                  "_serie": "F_total",
+                  "_id": "data-serie-105",
                   "stroke": "rgba(231,76,60,1)",
                   "fill": "rgba(231,76,60,0.1)"
                },
