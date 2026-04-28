@@ -247,6 +247,6 @@ void flight_control(void)  {
         //printf(">F_total: %f\n", f_total);
         //printf(">State: %d\n", system_state);
         //log_motors();
-        //log_sensors();
+        log_sensors();
     }
 }    
