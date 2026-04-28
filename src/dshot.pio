@@ -1,0 +1,35 @@
+.program dshot
+.side_set 1 opt
+
+public entry:
+    pull noblock               
+    out x, 1                 
+
+    jmp !x, do_zero side 1 [2]
+    
+do_one:
+    jmp bit_end side 1 [2]  
+
+do_zero:
+    nop side 0 [2]            
+
+bit_end:
+    nop side 0 [1]          
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void dshot_program_init(PIO pio, uint sm, uint offset, uint pin, float clk_div) {
+    pio_sm_config c = dshot_program_get_default_config(offset);
+
+    sm_config_set_sideset_pins(&c, pin);
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    sm_config_set_out_shift(&c, false, true, 32);
+    sm_config_set_clkdiv(&c, clk_div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

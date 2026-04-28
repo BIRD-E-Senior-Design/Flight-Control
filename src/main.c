@@ -12,10 +12,29 @@
 #include "test/motor_test.h"
 #include "config.h"
 
+#include "hardware/pio.h"
+#include "dshot.pio.h"
+
 
 int main() {
     //UART INIT FOR LOGGING
     stdio_init_all();
+    //flash_test();
+
+    PIO pio = pio0;
+    uint offset = pio_add_program(pio, &dshot_program);
+    float clk_div = (float)clock_get_hz(clk_sys) / 2400000.0f;
+    dshot_program_init(pio, 0, offset, PIN_MOTOR1, clk_div); //fr
+    dshot_program_init(pio, 1, offset, PIN_MOTOR2, clk_div); //br
+    dshot_program_init(pio, 2, offset, PIN_MOTOR3, clk_div); //fl
+    dshot_program_init(pio, 3, offset, PIN_MOTOR4, clk_div); //bl
+
+    //MOTOR STARTUP
+    init_pwm_motor();
+    //calibrate(0);
+    motor_init_sequence();
+    //matrix_test();
+    //test_all_motors();
 
     //UART INIT FOR USER CMDS
     uart_init(uart1, 115200); //standard UART baud rate
@@ -37,19 +56,12 @@ int main() {
     //WAIT FOR STARTUP CMD
     printf("Waiting for Startup...\n");
     cmd_t local_cmd;
-    do {
-        fifo_pop_cmd(&cmd_buffer,&local_cmd);
-    } while (local_cmd.id != STARTUP);
-    local_cmd.id = NONE;
-
-    //MOTOR STARTUP
-    init_pwm_motor();
-    motor_init_sequence();
-
-    //OPTIONAL TEST SCRIPTS
-    //test_all_motors();
-    //flash_test();
-
+    // do {
+    //     fifo_pop_cmd(&cmd_buffer,&local_cmd);
+    // } while (local_cmd.id != STARTUP);
+    // system_state = TAKEOFF;
+    // local_cmd.id = NONE;
+    
     //POLLING START
     start_polling_imu();
     start_polling_tof();

@@ -3,8 +3,8 @@
 #include "types.h"
 
 #define d1 0.087 //meters
-#define d2 0.07 //meters
-#define d3 0.095 //meters
+#define d2 0.072 //meters
+#define d3 0.0925 //meters
 #define c 0.0122 //Thrust (N) -> torque (N*m) ratio
 #define Y 5 //degrees
 #define A 20 //millimeters
@@ -12,7 +12,9 @@
 #define dt 0.01 //seconds
 #define alpha 0 //no unit
 #define k_decay 0.95 //no unit
-#define THRUST_HOVER 3.43 // Newtons
+#define THRUST_HOVER 2.94 // Newtons
+#define ALT_INTEGRAL_LIMIT 400.0 //tied to altitude gains
+#define ATT_INTEGRAL_LIMIT 20.0 //tied to attitude gains
 
 const float K_inv[4][4] = 
 {{-d2/(2*(-d1-d2)), -1/(2*(-d1-d2)), 1/(4*d3), -1/(4*c)},
@@ -20,13 +22,13 @@ const float K_inv[4][4] =
 {d2/(2*(d1+d2)), -1/(2*(-d1-d2)), -1/(4*d3), 1/(4*c)},
 {-d1/(2*(-d1-d2)), 1/(2*(-d1-d2)), -1/(4*d3), -1/(4*c)}};
 
-const float kp_outer_att[3] = {0.25, 1.5, 1.5};
-const float kp_inner_att[3] = {0.01, 0.01, 0.01};
-const float ki_inner_att[3] = {0, 0, 0};
+const float kp_att[3] = {0.02, 0.02, 0.02};
+const float kd_att[3] = {0.01, 0.01, 0.01};
+const float ki_att[3] = {0, 0, 0};
 
-const float kp_outer_alt = 1.75;
-const float kp_inner_alt = 0.01;
-const float ki_inner_alt = 0;
+const float kp_alt = 0.02;
+const float kd_alt = 0.01;
+const float ki_alt = 0;
 
 float integral_e_att[3] = {0, 0, 0};
 float integral_e_alt = 0;
@@ -53,71 +55,35 @@ uint16_t grid_choice(imu_measurement* orientation, uint16_t* distance) {
     return altitude;
 }
 
-//pitch goes positive to move down the square, negative to move up
-//roll goes positive to move left on the square, negative to move right
-//equation is pitch_square*4 + roll
-// uint16_t grid_choice(imu_measurement* orientation, uint16_t* distance) {
-//     int pitch_nadir, roll_nadir;
-//     if (orientation->angle[1] > 0) {
-//         if (orientation->angle[1] < 11.701) {
-//             pitch_nadir = 4;
-//         }
-//         else {pitch_nadir = 0;}
-//     }
-//     else  {
-//         if (orientation->angle[1] > -11.701) {
-//             pitch_nadir = 8;
-//         }
-//         else {pitch_nadir = 12;}
-//     }
-
-//     if (orientation->angle[2] > 0) {
-//         if (orientation->angle[2] < 11.701) {
-//             roll_nadir = 1;
-//         }
-//         else {roll_nadir = 0;}
-//     }
-//     else  {
-//         if (orientation->angle[2] > -11.701) {
-//             roll_nadir = 2;
-//         }
-//         else {roll_nadir = 3;}
-//     }
-//     return distance[pitch_nadir + roll_nadir];
-// }
-
-
-void attitude_outer_loop(float target_rate[3], float target_state[3], float current_state[3]) {
+void attitude_PID(float target_rate[3], float current_rate[3], float target_state[3], float current_state[3], float torque[3]) {
+    float state_error;
+    float rate_error;
     for (int i=0; i<3; i++) {
-        float error = current_state[i] - target_state[i];
+        state_error = current_state[i] - target_state[i];
+        rate_error = current_rate[i] - target_rate[i];
 
-        //yaw wrap around correction
         if (i == 0) {
-            if (error > 180.0f)  error -= 360.0f;
-            if (error < -180.0f) error += 360.0f;
+            if (state_error > 180.0f)  state_error -= 360.0f;
+            if (state_error < -180.0f) state_error += 360.0f;
         }
 
-        target_rate[i] = -kp_outer_att[i] * error;
+        integral_e_att[i] += state_error*dt;
+        if (integral_e_att[i] > ATT_INTEGRAL_LIMIT) {integral_e_att[i] = ATT_INTEGRAL_LIMIT;}
+        else if (integral_e_att[i] < -ATT_INTEGRAL_LIMIT) {integral_e_att[i] = -ATT_INTEGRAL_LIMIT;}
+
+        torque[i] = -kp_att[i]*state_error - kd_att[i]*rate_error - ki_att[i]*integral_e_att[i];
     }
 }
 
-void attitude_inner_loop(float torque[3], float target_rate[3], float current_rate[3]) {
-    float e;
-    for (int i=0; i<3; i++) {
-        e = current_rate[i] - target_rate[i];
-        integral_e_att[i] += e *dt;
-        torque[i] = -kp_inner_att[i]*e -ki_inner_att[i]*integral_e_att[i];
-    }
-}
+void altitude_PID(float target_rate, float current_rate, float target_state, float current_state, float* f_total) {
+    float state_error = current_state - target_state;
+    float rate_error = current_rate - target_rate;
 
-void altitude_outer_loop(float* target_rate, float target_state, float current_state) {
-    *target_rate = -kp_outer_alt*(current_state - target_state);
-}
+    integral_e_alt += current_rate - state_error*dt;
+    if (integral_e_alt > ALT_INTEGRAL_LIMIT) {integral_e_alt = ALT_INTEGRAL_LIMIT;}
+    else if (integral_e_alt < -ALT_INTEGRAL_LIMIT) {integral_e_alt = -ALT_INTEGRAL_LIMIT;}
 
-void altitude_inner_loop(float* f_total, float target_rate, float current_rate) {
-    float e = current_rate - target_rate;
-    integral_e_alt += e *dt;
-    *f_total = THRUST_HOVER + -kp_inner_alt*e -ki_inner_alt*integral_e_alt;
+    *f_total = THRUST_HOVER - kp_alt*state_error - kd_alt*rate_error - ki_alt*integral_e_alt;
 }
 
 //dt for position is double since it is gathered at 50Hz instead of 100Hz
