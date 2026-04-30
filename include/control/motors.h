@@ -7,6 +7,8 @@
 
 void init_pwm_motor(void);
 
+void init_pio_motor();
+
 void motor_init_sequence();
 
 void set_motors(int fl, int bl, int fr, int br);

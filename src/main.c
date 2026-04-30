@@ -12,29 +12,10 @@
 #include "test/motor_test.h"
 #include "config.h"
 
-#include "hardware/pio.h"
-#include "dshot.pio.h"
-
-
 int main() {
     //UART INIT FOR LOGGING
     stdio_init_all();
     //flash_test();
-
-    PIO pio = pio0;
-    uint offset = pio_add_program(pio, &dshot_program);
-    float clk_div = (float)clock_get_hz(clk_sys) / 2400000.0f;
-    dshot_program_init(pio, 0, offset, PIN_MOTOR1, clk_div); //fr
-    dshot_program_init(pio, 1, offset, PIN_MOTOR2, clk_div); //br
-    dshot_program_init(pio, 2, offset, PIN_MOTOR3, clk_div); //fl
-    dshot_program_init(pio, 3, offset, PIN_MOTOR4, clk_div); //bl
-
-    //MOTOR STARTUP
-    init_pwm_motor();
-    //calibrate(0);
-    motor_init_sequence();
-    //matrix_test();
-    //test_all_motors();
 
     //UART INIT FOR USER CMDS
     uart_init(uart1, 115200); //standard UART baud rate
@@ -52,6 +33,14 @@ int main() {
     gpio_set_function(PIN_I2C0_SCL, GPIO_FUNC_I2C);
     gpio_set_function(PIN_I2C0_SDA, GPIO_FUNC_I2C);
     init_tof();
+
+    //MOTOR STARTUP
+    init_pwm_motor();
+    //init_pio_motor();
+    //calibrate(0);
+    motor_init_sequence();
+    //matrix_test();
+    test_all_motors();
 
     //WAIT FOR STARTUP CMD
     printf("Waiting for Startup...\n");

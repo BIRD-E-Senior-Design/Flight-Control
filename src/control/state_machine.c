@@ -242,7 +242,7 @@ void flight_control(void)  {
         for (int i=0; i<4; i++) {
             motor_speeds[i] = force_translator(force[i]);
         }
-        set_motors(motor_speeds[0], motor_speeds[1], motor_speeds[2], motor_speeds[3]);
+        //set_motors(motor_speeds[0], motor_speeds[1], motor_speeds[2], motor_speeds[3]);
 
         //printf(">F_total: %f\n", f_total);
         //printf(">State: %d\n", system_state);

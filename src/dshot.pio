@@ -2,31 +2,33 @@
 .side_set 1 opt
 
 public entry:
-    pull noblock               
-    out x, 1                 
+    pull block                  ; Wait for a new 32-bit frame from C++
+    set y, 15                   ; Loop counter for 16 bits
 
-    jmp !x, do_zero side 1 [2]
-    
+bitloop:
+    out x, 1                    ; Shift 1 bit from OSR to X (1 cycle LOW)
+    jmp !x, do_zero side 1 [2]  ; Drive HIGH for 3 cycles. If 0, jump to do_zero.
+
 do_one:
-    jmp bit_end side 1 [2]  
+    jmp bit_end side 1 [2]      ; Keep HIGH for 3 more cycles (Total 6 HIGH for a '1')
 
 do_zero:
-    nop side 0 [2]            
+    nop side 0 [2]              ; Drive LOW for 3 cycles (Total 3 HIGH, 3 LOW for a '0')
 
 bit_end:
-    nop side 0 [1]          
+    jmp y--, bitloop side 0 [2] ; Drive LOW for 3 cycles, loop until y < 0
 
 % c-sdk {
 #include "hardware/clocks.h"
 
 static inline void dshot_program_init(PIO pio, uint sm, uint offset, uint pin, float clk_div) {
     pio_sm_config c = dshot_program_get_default_config(offset);
-
     sm_config_set_sideset_pins(&c, pin);
     pio_gpio_init(pio, pin);
     pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
 
-    sm_config_set_out_shift(&c, false, true, 32);
+    // false = shift left (MSB first), false = autopull off, 32 = threshold
+    sm_config_set_out_shift(&c, false, false, 32); 
     sm_config_set_clkdiv(&c, clk_div);
 
     pio_sm_init(pio, sm, offset, &c);

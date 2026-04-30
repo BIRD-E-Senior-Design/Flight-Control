@@ -105,7 +105,7 @@ void calibrate(int motor) {
 
 void test_all_motors() {
     int motor = 2;
-    int throttle = 1000;
+    int throttle = 50;
     int esc_state = 0;
     bool mode = false;
 
